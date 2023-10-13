@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Debug swift_coco",
+            "program": "${workspaceFolder:swift_coco}/.build/debug/swift_coco",
+            "args": [],
+            "cwd": "${workspaceFolder:swift_coco}",
+            "preLaunchTask": "swift: Build Debug swift_coco"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Release swift_coco",
+            "program": "${workspaceFolder:swift_coco}/.build/release/swift_coco",
+            "args": [],
+            "cwd": "${workspaceFolder:swift_coco}",
+            "preLaunchTask": "swift: Build Release swift_coco"
+        }
+    ]
+}
