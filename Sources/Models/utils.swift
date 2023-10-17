@@ -32,7 +32,7 @@ func createDefaultCocoJson(datasetConfigURL: URL) -> CocoAnno {
 
     let coco_license = CocoLicense(
         url: "",
-        id: 1,
+        id: 0,
         name: ""
     )
 

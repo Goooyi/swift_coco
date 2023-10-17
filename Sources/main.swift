@@ -5,6 +5,8 @@ import Foundation
 
 // TODO: argparser
 // TODO: input config.txt file path
+// TODO: merge json files from multiple folders
+// TODO: update txt file and logic to handle `supercategory`
 // define the path to input json files
 let jsonsURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/ANNOTATION_roadmark/FRONT_rect/")
 let imageURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/IMAGE/FRONT_rect")
@@ -20,7 +22,6 @@ do {
 }
 
 var coco_json = createDefaultCocoJson(datasetConfigURL: datasetConfigURL)
-print(coco_json)
 
 // iter through jsonsURL to read json files
 let decoder = JSONDecoder()
@@ -31,7 +32,12 @@ let sortedJSONs = jsons.sorted { url1, url2 -> Bool in
 
 // TODO: status bar
 var categoryCounter = [String: Int]()
+let total = sortedJSONs.count
+print("Processing \(total) items...")
 for (index, json) in sortedJSONs.enumerated() {
+    let progress = Float(index + 1) / Float(total)
+    print("\rProgress: \(progress * 100)%", terminator: "")
+
     let axera_json = try! String(contentsOf: json)
     if let axeraData = axera_json.data(using: .utf8) {
         do {
@@ -40,14 +46,39 @@ for (index, json) in sortedJSONs.enumerated() {
                 continue
             }
 
+            // add image entry toto coco json
+            let cocoImage = CocoImage(
+                id: coco_json.images.count,
+                license: 0,
+                file_name: "",
+                height: axera_img_anno.frames[0].frames[0].imageHeight,
+                width: axera_img_anno.frames[0].frames[0].imageWidth,
+                date_captured: ""
+            )
+            coco_json.images.append(cocoImage)
+
             // create a set to store different names
             for inst in axera_img_anno.instances {
+                print(inst.children[0].cameras[0].frames[0].shapeType)
+                // update counter
                 let curCategoryName = inst.categoryName
                 if let count = categoryCounter[curCategoryName] {
                     categoryCounter[curCategoryName] = count + 1
                 } else {
                     categoryCounter[curCategoryName] = 1
                 }
+
+                // create a CocoInstanceAnnotation to add to coco_json
+                let cocoInstanceAnnotation = CocoInstanceAnnotation(
+                    id: coco_json.annotations.count,
+                    image_id: coco_json.images.count,
+                    // assign category_id by look up the mapping between id and name in CocoCategory
+                    category_id: coco_json.categories[coco_json.categories.firstIndex(where: { $0.name == curCategoryName })!].id,
+                    bbox: [0, 0, 0, 0],
+                    segmentation: [[0, 0, 0, 0]],
+                    area: 0,
+                    iscrowd: 0
+                )
             }
 
             // if axera_img_anno.instances[0].categoryName == "停止线" {
@@ -77,6 +108,7 @@ for (index, json) in sortedJSONs.enumerated() {
     // }
 }
 
+print("\nDone")
 print("--------------------------------------------------------------------------------")
 print("Instance Count for each Category")
 print(categoryCounter)
