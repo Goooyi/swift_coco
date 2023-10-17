@@ -3,10 +3,12 @@
 // import necessary packages for json
 import Foundation
 
-// TODO argparser
+// TODO: argparser
+// TODO: input config.txt file path
 // define the path to input json files
 let jsonsURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/ANNOTATION_roadmark/FRONT_rect/")
 let imageURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/IMAGE/FRONT_rect")
+let datasetConfigURL = URL(fileURLWithPath: "/workspaces/swift/swift_coco/Config/axera_roadMarking_trafficLight_trafficSign.txt")
 // define the path to output json files
 let output_cocoURL = URL(fileURLWithPath: "/code/gaoyi_dataset/coco/aXcellent_roadmark_FRONT_rect/annotations/all_roadmark_trafficSign_trafficLight_withoutNegatives.json")
 
@@ -17,7 +19,8 @@ do {
     print(error)
 }
 
-var coco_json = createDefaultCocoJson()
+var coco_json = createDefaultCocoJson(datasetConfigURL: datasetConfigURL)
+print(coco_json)
 
 // iter through jsonsURL to read json files
 let decoder = JSONDecoder()
@@ -26,7 +29,8 @@ let sortedJSONs = jsons.sorted { url1, url2 -> Bool in
     url1.lastPathComponent < url2.lastPathComponent
 }
 
-// TODO status bar
+// TODO: status bar
+var categoryCounter = [String: Int]()
 for (index, json) in sortedJSONs.enumerated() {
     let axera_json = try! String(contentsOf: json)
     if let axeraData = axera_json.data(using: .utf8) {
@@ -34,6 +38,16 @@ for (index, json) in sortedJSONs.enumerated() {
             let axera_img_anno = try decoder.decode(AxeraImageAnno.self, from: axeraData)
             if axera_img_anno.instances.count == 0 {
                 continue
+            }
+
+            // create a set to store different names
+            for inst in axera_img_anno.instances {
+                let curCategoryName = inst.categoryName
+                if let count = categoryCounter[curCategoryName] {
+                    categoryCounter[curCategoryName] = count + 1
+                } else {
+                    categoryCounter[curCategoryName] = 1
+                }
             }
 
             // if axera_img_anno.instances[0].categoryName == "停止线" {
@@ -62,3 +76,7 @@ for (index, json) in sortedJSONs.enumerated() {
     //     break
     // }
 }
+
+print("--------------------------------------------------------------------------------")
+print("Instance Count for each Category")
+print(categoryCounter)

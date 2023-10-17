@@ -13,12 +13,13 @@ final class MyTest: XCTestCase {
 
         if let jsonData = jsonString.data(using: .utf8) {
             let decoder = JSONDecoder()
-            let axera_img_anno = try decoder.decode(axera_img_anno.self, from: jsonData)
+            let axera_img_anno = try decoder.decode(AxeraImageAnno.self, from: jsonData)
             XCTAssertEqual(axera_img_anno.auditId, "a0d895ab-c07d-411a-8038-60036cfdf887.567.audit")
             XCTAssertEqual(axera_img_anno.instances[0].categoryName, "路面箭头")
+            XCTAssertEqual(axera_img_anno.instances[0].attributes?["occlusion"], "0")
             XCTAssertEqual(axera_img_anno.instances[0].attributes?["type"], "unknown")
             XCTAssertEqual(axera_img_anno.instances[0].children[0].id, "1c974fb8-5a90-4708-a8ff-54ac5fb25e74")
-            print(axera_img_anno.instances[0].children[0].cameras[0].frames[0].shape)
+            // print(axera_img_anno.instances[0].children[0].cameras[0].frames[0].shape)
             switch axera_img_anno.instances[0].children[0].cameras[0].frames[0].shape {
                 case .rectangle(let rectangle):
                     print(rectangle.x)

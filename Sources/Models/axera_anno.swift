@@ -89,6 +89,19 @@ struct AxeraChild: Codable {
     var cameras: [AxeraCamera]
 }
 
+struct AnyCodingKey: CodingKey {
+    var stringValue: String
+    var intValue: Int?
+
+    init(stringValue: String) {
+        self.stringValue = stringValue
+    }
+
+    init?(intValue _: Int) {
+        return nil
+    }
+}
+
 struct AxeraInstance: Codable {
     var id: String
     var category: String
@@ -97,17 +110,26 @@ struct AxeraInstance: Codable {
     var children: [AxeraChild]
     // var attributes: [String: String]?
     // deal with `attributes` sometimes is "", sometimes is a [string:string] pair
-    private var _attributes: [String: String]?
-    var attributes: [String: String]? {
-        get {
-            return _attributes
-        }
-        set {
-            if let newValue = newValue {
-                _attributes = newValue.isEmpty ? nil : newValue
-            } else {
-                _attributes = nil
-            }
+    var attributes: [String: String]?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, category, categoryName, number, children, attributes
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        category = try container.decode(String.self, forKey: .category)
+        categoryName = try container.decode(String.self, forKey: .categoryName)
+        number = try container.decode(Int.self, forKey: .number)
+        children = try container.decode([AxeraChild].self, forKey: .children)
+
+        if let attributesContainer = try? container.decode([String: String].self, forKey: .attributes) {
+            attributes = attributesContainer
+        } else if let emptyString = try? container.decodeIfPresent(String.self, forKey: .attributes), emptyString == "" {
+            attributes = nil
+        } else {
+            attributes = nil
         }
     }
 }

@@ -28,7 +28,7 @@ struct CocoImage : Codable {
     var date_captured : String
 }
 
-struct CocoAnnotation : Codable {
+struct CocoInstanceAnnotation : Codable {
     var id : Int
     var image_id : Int
     var category_id : Int
@@ -43,5 +43,5 @@ struct CocoAnno : Codable {
     var licenses : [CocoLicense]
     var categories : [CocoCategory]
     var images : [CocoImage]
-    var annotations : [CocoAnnotation]
+    var annotations : [CocoInstanceAnnotation]
 }
