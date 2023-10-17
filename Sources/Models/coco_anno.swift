@@ -1,4 +1,4 @@
-struct coco_info : Codable {
+struct CocoInfo : Codable {
     var year : String
     var version: String
     var description : String
@@ -7,19 +7,19 @@ struct coco_info : Codable {
     var date_created : String
 }
 
-struct coco_license : Codable {
+struct CocoLicense : Codable {
     var url : String
     var id : Int
     var name : String
 }
 
-struct coco_category : Codable {
+struct CocoCategory : Codable {
     var id : Int
     var name : String
     var supercategory : String
 }
 
-struct coco_image : Codable {
+struct CocoImage : Codable {
     var id : Int
     var license : Int
     var file_name : String
@@ -28,7 +28,7 @@ struct coco_image : Codable {
     var date_captured : String
 }
 
-struct coco_annotation : Codable {
+struct CocoAnnotation : Codable {
     var id : Int
     var image_id : Int
     var category_id : Int
@@ -38,10 +38,10 @@ struct coco_annotation : Codable {
     var iscrowd : Int
 }
 
-struct coco_anno : Codable {
-    var info : coco_info
-    var licenses : [coco_license]
-    var categories : [coco_category]
-    var images : [coco_image]
-    var annotations : [coco_annotation]
+struct CocoAnno : Codable {
+    var info : CocoInfo
+    var licenses : [CocoLicense]
+    var categories : [CocoCategory]
+    var images : [CocoImage]
+    var annotations : [CocoAnnotation]
 }

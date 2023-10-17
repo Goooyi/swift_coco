@@ -1,4 +1,4 @@
-struct axera_frame_frame: Codable {
+struct AxeraFrameFrame: Codable {
     var imageUrl: String
     var frameIndex: Int?
     var valid: Bool
@@ -14,12 +14,12 @@ struct axera_frame_frame: Codable {
     }
 }
 
-struct axera_frame: Codable {
+struct AxeraFrame: Codable {
     var camera: String
-    var frames: [axera_frame_frame]
+    var frames: [AxeraFrameFrame]
 }
 
-struct axera_camera_frame: Codable {
+struct AxeraCameraFrame: Codable {
     var frameIndex: Int?
     var isKeyFrame: Bool?
     var shapeType: String?
@@ -41,10 +41,10 @@ struct axera_camera_frame: Codable {
 
         shapeType = try container.decode(String.self, forKey: .shapeType)
 
-        //print the type of BaseShape
+        // print the type of BaseShape
 
         switch shapeType {
-        // TODO
+        // TODO:
         case "rectangle":
             let rect = try container.decode(Rectangle.self, forKey: .shape)
             shape = .rectangle(rect)
@@ -75,35 +75,49 @@ struct axera_camera_frame: Codable {
     }
 }
 
-struct axera_camera: Codable {
+struct AxeraCamera: Codable {
     var camera: String
-    var frames: [axera_camera_frame]
+    var frames: [AxeraCameraFrame]
 }
 
-struct axera_child: Codable {
+struct AxeraChild: Codable {
     var id: String
     var name: String
     var displayName: String
     var displayColor: String
     var number: Int
-    var cameras: [axera_camera]
+    var cameras: [AxeraCamera]
 }
 
-struct axera_instance: Codable {
+struct AxeraInstance: Codable {
     var id: String
     var category: String
     var categoryName: String
     var number: Int
-    var attributes: [String: String]?
-    var children: [axera_child]
+    var children: [AxeraChild]
+    // var attributes: [String: String]?
+    // deal with `attributes` sometimes is "", sometimes is a [string:string] pair
+    private var _attributes: [String: String]?
+    var attributes: [String: String]? {
+        get {
+            return _attributes
+        }
+        set {
+            if let newValue = newValue {
+                _attributes = newValue.isEmpty ? nil : newValue
+            } else {
+                _attributes = nil
+            }
+        }
+    }
 }
 
 // defines axera shapes
 
-struct axera_img_anno: Codable {
+struct AxeraImageAnno: Codable {
     var auditId: String
-    var instances: [axera_instance]
-    var frames: [axera_frame]
+    var instances: [AxeraInstance]
+    var frames: [AxeraFrame]
     var relationships: [[String: String]]
     var attributes: [String: String]?
     var statistics: String
