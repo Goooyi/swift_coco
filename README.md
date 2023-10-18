@@ -12,6 +12,9 @@ None. Since swift package [SwiftyJson](https://swiftpackageindex.com/SwiftyJSON/
 
 - [ ] `file_name` in the image name is named as absolute path since images can locate at different directories.
 
+## Notice
+
+coco format set category id=0 as `background` class. When training with [detectron2](https://github.com/facebookresearch/detectron2) framework, the totoal class param in your config should be set to total_class_num + 1(background class)
 
 ## Structure of coco format
 ```json
