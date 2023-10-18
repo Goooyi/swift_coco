@@ -7,21 +7,24 @@ import Foundation
 // TODO: input config.txt file path
 // TODO: merge json files from multiple folders
 // TODO: update txt file and logic to handle `supercategory`
+// TODO: FRONT_rect vs Wide
 // define the path to input json files
 let jsonsURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/ANNOTATION_roadmark/FRONT_rect/")
 let imageURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/IMAGE/FRONT_rect")
 let datasetConfigURL = URL(fileURLWithPath: "/workspaces/swift/swift_coco/Config/axera_roadMarking_trafficLight_trafficSign.txt")
 // define the path to output json files
-let output_cocoURL = URL(fileURLWithPath: "/code/gaoyi_dataset/coco/aXcellent_roadmark_FRONT_rect/annotations/all_roadmark_trafficSign_trafficLight_withoutNegatives.json")
+let output_cocoURL = URL(fileURLWithPath: "/code/gaoyi_dataset/coco/aXcellent_roadmark_FRONT_rect/annotations/all_FRONT_rect_roadmark_trafficSign_trafficLight_withoutNegatives.json")
 
 // create the output coco directory and file
+let parentDirectoryURL = output_cocoURL.deletingLastPathComponent()
 do {
-    try FileManager.default.createDirectory(at: output_cocoURL, withIntermediateDirectories: true, attributes: nil)
+    try FileManager.default.createDirectory(at: parentDirectoryURL, withIntermediateDirectories: true, attributes: nil)
 } catch {
-    print(error)
+    print("Error creating parent directory: \(error)")
 }
 
 var coco_json = createDefaultCocoJson(datasetConfigURL: datasetConfigURL)
+let nameMapping = extractCn2EngNameMapping(dataasetConfigURL: datasetConfigURL)
 
 // iter through jsonsURL to read json files
 let decoder = JSONDecoder()
@@ -34,11 +37,11 @@ let sortedJSONs = jsons.sorted { url1, url2 -> Bool in
 var categoryCounter = [String: Int]()
 let total = sortedJSONs.count
 print("Processing \(total) items...")
-for (index, json) in sortedJSONs.enumerated() {
+for (index, cur_json) in sortedJSONs.enumerated() {
     let progress = Float(index + 1) / Float(total)
     print("\rProgress: \(progress * 100)%", terminator: "")
 
-    let axera_json = try! String(contentsOf: json)
+    let axera_json = try! String(contentsOf: cur_json)
     if let axeraData = axera_json.data(using: .utf8) {
         do {
             let axera_img_anno = try decoder.decode(AxeraImageAnno.self, from: axeraData)
@@ -47,10 +50,11 @@ for (index, json) in sortedJSONs.enumerated() {
             }
 
             // add image entry toto coco json
+            let file_path = imageURL.appendingPathComponent(cur_json.deletingPathExtension().appendingPathExtension("jpg").lastPathComponent)
             let cocoImage = CocoImage(
                 id: coco_json.images.count,
                 license: 0,
-                file_name: "",
+                file_name: file_path.path,
                 height: axera_img_anno.frames[0].frames[0].imageHeight,
                 width: axera_img_anno.frames[0].frames[0].imageWidth,
                 date_captured: ""
@@ -59,7 +63,6 @@ for (index, json) in sortedJSONs.enumerated() {
 
             // create a set to store different names
             for inst in axera_img_anno.instances {
-                print(inst.children[0].cameras[0].frames[0].shapeType)
                 // update counter
                 let curCategoryName = inst.categoryName
                 if let count = categoryCounter[curCategoryName] {
@@ -68,47 +71,39 @@ for (index, json) in sortedJSONs.enumerated() {
                     categoryCounter[curCategoryName] = 1
                 }
 
+                let coco_anno_seg = extractCocoSeg(axera_inst: inst)
+                let coco_anno_bbox = calBboxFromCocoSeg(polygon_points_array: coco_anno_seg)
+                let cur_box_area = coco_anno_bbox[2] * coco_anno_bbox[3]
                 // create a CocoInstanceAnnotation to add to coco_json
+                // TODO: as a func
                 let cocoInstanceAnnotation = CocoInstanceAnnotation(
                     id: coco_json.annotations.count,
                     image_id: coco_json.images.count,
                     // assign category_id by look up the mapping between id and name in CocoCategory
-                    category_id: coco_json.categories[coco_json.categories.firstIndex(where: { $0.name == curCategoryName })!].id,
-                    bbox: [0, 0, 0, 0],
-                    segmentation: [[0, 0, 0, 0]],
-                    area: 0,
+                    category_id: coco_json.categories[coco_json.categories.firstIndex(where: { $0.name == nameMapping[curCategoryName] })!].id,
+                    bbox: coco_anno_bbox,
+                    segmentation: coco_anno_seg,
+                    area: cur_box_area,
                     iscrowd: 0
                 )
+                coco_json.annotations.append(cocoInstanceAnnotation)
             }
-
-            // if axera_img_anno.instances[0].categoryName == "停止线" {
-            //     print(axera_img_anno.instances[0].children[0].cameras[0].frames[0].shape)
-            // }
-            // print(axera_img_anno.instances[0].categoryName)
-
-            // print("-----------------------------------------------------")
-            // print(axera_img_anno)
-            // print("-----------------------------------------------------")
         } catch {
             print("!!!!Current json file path!!!!")
-            print(json)
+            print(cur_json)
             print("\(error)")
             print("Error: \(error.localizedDescription)")
         }
-
-        // switch axera_img_anno.instances[0].children[0].cameras[0].frames[0].shape {
-        // case let .rectangle(rectangle):
-        //     print(rectangle.x)
-        // default: // TODO: other cases
-        //     break
-        // }
+        // save coco_json
     }
-    // if index > 200 {
-    //     break
-    // }
 }
 
+print("\nsaved to \(output_cocoURL)")
+do {
+    try JSONEncoder().encode(coco_json).write(to: output_cocoURL)
+}
 print("\nDone")
 print("--------------------------------------------------------------------------------")
+print("Total \(coco_json.images.count) images")
 print("Instance Count for each Category")
 print(categoryCounter)

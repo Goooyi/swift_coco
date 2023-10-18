@@ -32,9 +32,9 @@ struct CocoInstanceAnnotation : Codable {
     var id : Int
     var image_id : Int
     var category_id : Int
-    var bbox : [Int]
-    var segmentation : [[Int]]
-    var area : Int
+    var bbox : [Double]
+    var segmentation : [[Double]]
+    var area : Double
     var iscrowd : Int
 }
 

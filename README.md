@@ -3,6 +3,13 @@
 ## Package used?
 swift package [SwiftyJson](https://swiftpackageindex.com/SwiftyJSON/SwiftyJSON) not compitable with Linux for now, so write entirely using swift natively on Linux [JSONDecoder](https://developer.apple.com/documentation/foundation/jsondecoder).
 
+## TODO
+
+- [ ] Since image `id` filed is mapped to it's index on the `images` fileds, mergeing with other source annotated `.json` file is not checked
+
+- [ ] `file_name` in the image name is named as absolute path since images can locate at different directories.
+
+
 ## Structure of coco format
 ```json
 {
