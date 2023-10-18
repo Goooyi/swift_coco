@@ -1,4 +1,4 @@
 0 背景 background
-1 路面箭头 Arrow
+1 路面箭头 Road_Arrow
 2 人行横道 Crosswalk
-3 停止线 Stop-line
+3 停止线 Stopline

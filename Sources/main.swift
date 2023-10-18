@@ -8,6 +8,9 @@ import Foundation
 // define the path to input json files
 let jsonsURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/ANNOTATION_roadmark/FRONT_rect/")
 let jsons = try FileManager.default.contentsOfDirectory(at: jsonsURL, includingPropertiesForKeys: nil, options: .skipsSubdirectoryDescendants)
+let sortedJSONs = jsons.sorted { url1, url2 -> Bool in
+    url1.lastPathComponent < url2.lastPathComponent
+}
 let decoder = JSONDecoder()
 
 let imageURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/IMAGE/FRONT_rect")
@@ -24,9 +27,6 @@ do {
     print("Error creating parent directory: \(error)")
 }
 
-let sortedJSONs = jsons.sorted { url1, url2 -> Bool in
-    url1.lastPathComponent < url2.lastPathComponent
-}
 
 let total = sortedJSONs.count
 var categoryCounter = [String: Int]()
