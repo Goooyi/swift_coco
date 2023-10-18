@@ -1,6 +1,3 @@
-// convert axera annotation format to coco format
-
-// import necessary packages for json
 import Foundation
 
 // TODO: argparser
@@ -10,32 +7,34 @@ import Foundation
 // TODO: FRONT_rect vs Wide
 // define the path to input json files
 let jsonsURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/ANNOTATION_roadmark/FRONT_rect/")
+let jsons = try FileManager.default.contentsOfDirectory(at: jsonsURL, includingPropertiesForKeys: nil, options: .skipsSubdirectoryDescendants)
+let decoder = JSONDecoder()
+
 let imageURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/IMAGE/FRONT_rect")
 let datasetConfigURL = URL(fileURLWithPath: "/workspaces/swift/swift_coco/Config/axera_roadMarking_trafficLight_trafficSign.txt")
-// define the path to output json files
 let output_cocoURL = URL(fileURLWithPath: "/code/gaoyi_dataset/coco/aXcellent_roadmark_FRONT_rect/annotations/all_FRONT_rect_roadmark_trafficSign_trafficLight_withoutNegatives.json")
-
-// create the output coco directory and file
 let parentDirectoryURL = output_cocoURL.deletingLastPathComponent()
+
+let nameMapping = extractCn2EngNameMapping(datasetConfigURL: datasetConfigURL)
+var coco_json = createDefaultCocoJson(datasetConfigURL: datasetConfigURL)
+
 do {
     try FileManager.default.createDirectory(at: parentDirectoryURL, withIntermediateDirectories: true, attributes: nil)
 } catch {
     print("Error creating parent directory: \(error)")
 }
 
-var coco_json = createDefaultCocoJson(datasetConfigURL: datasetConfigURL)
-let nameMapping = extractCn2EngNameMapping(dataasetConfigURL: datasetConfigURL)
-
-// iter through jsonsURL to read json files
-let decoder = JSONDecoder()
-let jsons = try FileManager.default.contentsOfDirectory(at: jsonsURL, includingPropertiesForKeys: nil, options: .skipsSubdirectoryDescendants)
 let sortedJSONs = jsons.sorted { url1, url2 -> Bool in
     url1.lastPathComponent < url2.lastPathComponent
 }
 
-// TODO: status bar
-var categoryCounter = [String: Int]()
 let total = sortedJSONs.count
+var categoryCounter = [String: Int]()
+
+
+
+
+// TODO: status bar
 print("Processing \(total) items...")
 for (index, cur_json) in sortedJSONs.enumerated() {
     let progress = Float(index + 1) / Float(total)
@@ -74,11 +73,10 @@ for (index, cur_json) in sortedJSONs.enumerated() {
                 let coco_anno_seg = extractCocoSeg(axera_inst: inst)
                 let coco_anno_bbox = calBboxFromCocoSeg(polygon_points_array: coco_anno_seg)
                 let cur_box_area = coco_anno_bbox[2] * coco_anno_bbox[3]
-                // create a CocoInstanceAnnotation to add to coco_json
                 // TODO: as a func
                 let cocoInstanceAnnotation = CocoInstanceAnnotation(
                     id: coco_json.annotations.count,
-                    image_id: coco_json.images.count,
+                    image_id: coco_json.images.count - 1,
                     // assign category_id by look up the mapping between id and name in CocoCategory
                     category_id: coco_json.categories[coco_json.categories.firstIndex(where: { $0.name == nameMapping[curCategoryName] })!].id,
                     bbox: coco_anno_bbox,
@@ -89,12 +87,10 @@ for (index, cur_json) in sortedJSONs.enumerated() {
                 coco_json.annotations.append(cocoInstanceAnnotation)
             }
         } catch {
-            print("!!!!Current json file path!!!!")
-            print(cur_json)
+            print("Error when decode \(cur_json)")
             print("\(error)")
             print("Error: \(error.localizedDescription)")
         }
-        // save coco_json
     }
 }
 
@@ -102,7 +98,7 @@ print("\nsaved to \(output_cocoURL)")
 do {
     try JSONEncoder().encode(coco_json).write(to: output_cocoURL)
 }
-print("\nDone")
+print("Done")
 print("--------------------------------------------------------------------------------")
 print("Total \(coco_json.images.count) images")
 print("Instance Count for each Category")

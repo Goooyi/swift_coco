@@ -54,7 +54,7 @@ func calBboxFromCocoSeg(polygon_points_array:[[Double]]) -> [Double] {
     return [minX, minY, maxX-minX, maxY-minY]
 }
 
-func extractCn2EngNameMapping(dataasetConfigURL: URL) -> [String: String] {
+func extractCn2EngNameMapping(datasetConfigURL: URL) -> [String: String] {
     // parse category
     var nameMapping = [String: String]()
     let fileContents = try! String(contentsOf: datasetConfigURL)
