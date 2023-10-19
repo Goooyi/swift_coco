@@ -1,4 +1,5 @@
 # swift_coco
+Map axera json annotation format toto coco annotation format
 
 ## Installation
 [Install](https://www.swift.org/install/) swift 5.8.1
