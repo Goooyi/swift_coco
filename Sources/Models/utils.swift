@@ -30,7 +30,7 @@ func extractCocoSeg(axera_inst: AxeraInstance) -> [[Double]] {
     return polygon_points_array
 }
 
-func calBboxFromCocoSeg(polygon_points_array:[[Double]]) -> [Double] {
+func calBboxFromCocoSeg(polygon_points_array: [[Double]]) -> [Double] {
     guard let firstFragment = polygon_points_array.first else {
         return []
     }
@@ -51,7 +51,7 @@ func calBboxFromCocoSeg(polygon_points_array:[[Double]]) -> [Double] {
             maxY = max(maxY, y)
         }
     }
-    return [minX, minY, maxX-minX, maxY-minY]
+    return [minX, minY, maxX - minX, maxY - minY]
 }
 
 func extractCn2EngNameMapping(datasetConfigURL: URL) -> [String: String] {
@@ -111,7 +111,7 @@ func createDefaultCocoJson(datasetConfigURL: URL) -> CocoAnno {
     return coco_anno
 }
 
-func createImageEntry (image_id: Int, file_name: String, height: Int, width: Int, date_captured: String = "", license: Int = 0) -> CocoImage {
+func createImageEntry(image_id: Int, file_name: String, height: Int, width: Int, date_captured: String = "", license: Int = 0) -> CocoImage {
     let coco_image = CocoImage(
         id: image_id,
         license: license,
@@ -123,19 +123,42 @@ func createImageEntry (image_id: Int, file_name: String, height: Int, width: Int
     return coco_image
 }
 
-// func type2categoryName(supercategory: String, type: String, color: String) -> String {
-//     var res = ""
-//     switch supercategory {
-//     case "交通灯":
-//         if type == "left" {
-//             res = "背景"
-//         }
-//     case "交通标志":
-//         res =  ""
-//     case "路面箭头":
-//         res = "停止线"
-//     default:
-//         res = supercategory
-//     }
-//     return res
-// }
+func supercategory2category(supercategory: String, type: String, color: String, typeCN: String) -> String {
+    var res = "unknown"
+    switch supercategory {
+    case "交通灯":
+        if type != "unknown", ["red", "yellow", "green", "black"].contains(color) {
+            res = color
+        }
+    case "路面箭头":
+        if type != "unknown" {
+            res = type
+        }
+
+    case "交通标志":
+        if ["il100",
+            "il60",
+            "il80",
+            "il90",
+            "pl100",
+            "pl120",
+            "pl15",
+            "pl20",
+            "pl30",
+            "pl40",
+            "pl5",
+            "pl50",
+            "pl60",
+            "pl70",
+            "pl80",
+            "pr40",
+            "pr60"].contains(typeCN) {
+            res = typeCN
+            } else if type != "unknown" {
+                res = "other"
+            }
+    default:
+        res = supercategory
+    }
+    return res
+}

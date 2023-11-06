@@ -5,11 +5,11 @@ import Foundation
 // TODO: FRONT_rect vs Wide
 // define the path to input json files
 var jsonsURLs = [URL]()
-jsonsURLs.append(URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/ANNOTATION_roadmark/FRONT_rect/"))
-jsonsURLs.append(URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/ANNOTATION_traffic/FRONT_rect/"))
+jsonsURLs.append(URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/ANNOTATION_ROADMARK/FRONT_rect/"))
+jsonsURLs.append(URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/ANNOTATION_TRAFFIC/FRONT_rect/"))
 let decoder = JSONDecoder()
 
-let imageURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/obstacle/IMAGE/FRONT_rect")
+let imageURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/IMAGE/FRONT_rect")
 let datasetConfigURL = URL(fileURLWithPath: "/workspaces/swift/swift_coco/Config/axera_roadMarking_trafficLight_trafficSign.txt")
 let output_cocoURL = URL(fileURLWithPath: "/code/gaoyi_dataset/coco/aXcellent_roadmark_FRONT_rect/annotations/all_FRONT_rect_RM_tfs_tfl_1106.json")
 let parentDirectoryURL = output_cocoURL.deletingLastPathComponent()
@@ -35,6 +35,8 @@ var trafficLighttype: Set<String> = []
 var trafficLightColor: Set<String> = []
 var trafficSigntype: Set<String> = []
 
+var Counter: [String: [String: Int]] = [:]
+
 // TODO: status bar
 print("Processing items...")
 for (jsonFileCount, jsonsURL) in jsonsURLs.enumerated() {
@@ -59,34 +61,41 @@ for (jsonFileCount, jsonsURL) in jsonsURLs.enumerated() {
                 // TODO: for now if all instance of this image is type:unkown, the cocoImage will not be added
                 // create a set to store different names
                 for inst in axera_img_anno.instances {
-                    // if (inst.categoryName == "交通灯") &&  ["red", "yellow", "green"].contains(inst.attributes?["color"]) {
-                    //     continue
-                    // }
-                    // TODO：different api for diff cate, so not wrote in one function yet
-                    if (inst.categoryName == "路面箭头") {
+                    // TODO：to delete, only for debug
+                    if inst.categoryName == "路面箭头" {
                         if let RAtype = inst.attributes?["type"], RAtype != "unknown" {
                             roadArrowtype.insert(RAtype)
-                        } else {
-                            continue
                         }
                     }
 
-                    if (inst.categoryName == "交通灯") {
+                    if inst.categoryName == "交通灯" {
                         if let TFLtype = inst.attributes?["type"], TFLtype != "unknown" {
                             trafficLighttype.insert(TFLtype)
                             trafficLightColor.insert(inst.attributes?["color"] ?? "unknown")
-                        } else {
-                            continue
                         }
                     }
 
-                    if (inst.categoryName == "交通标志") {
+                    if inst.categoryName == "交通标志" {
                         if let TFStype = inst.attributes?["类型"], TFStype != "unknown" {
                             trafficSigntype.insert(TFStype)
-                        } else {
-                            continue
                         }
                     }
+
+                    // skip if a supercategory that should have sub atttributes, but attributes is nil
+                    if ["交通灯", "路面箭头", "交通标志"].contains(inst.categoryName), inst.attributes == nil {
+                        continue
+                    }
+                    // only save those defined in supercategory2category
+                    let cate = supercategory2category(supercategory: inst.categoryName, type: inst.attributes?["type"] ?? "unknown", color: inst.attributes?["color"] ?? "unknown", typeCN: inst.attributes?["类型"] ?? "unknown")
+                    if cate == "unknown" {
+                        continue
+                    } else {
+                        Counter[inst.categoryName] = Counter[inst.categoryName] ?? [:]
+                        Counter[inst.categoryName]![cate] = (Counter[inst.categoryName]![cate] ?? 0) + 1
+                    }
+                    // if (inst.categoryName == "交通灯") &&  ["red", "yellow", "green"].contains(inst.attributes?["color"]) {
+                    //     continue
+                    // }
                     // create image entry if not exist
                     let file_path = imageURL.appendingPathComponent(cur_json.deletingPathExtension().appendingPathExtension("jpg").lastPathComponent)
                     if file_name2id[file_path.path] == nil {
@@ -96,11 +105,11 @@ for (jsonFileCount, jsonsURL) in jsonsURLs.enumerated() {
                             file_name: file_path.path,
                             height: axera_img_anno.frames[0].frames[0].imageHeight,
                             width: axera_img_anno.frames[0].frames[0].imageWidth
-                            )
+                        )
                         coco_json.images.append(cocoImage)
                     }
                     // update counter
-                    // TODO change category according to type
+                    // TODO: change category according to type
                     let curCategoryName = inst.categoryName
                     if let count = supercategoryCounter[curCategoryName] {
                         supercategoryCounter[curCategoryName] = count + 1
@@ -134,12 +143,34 @@ for (jsonFileCount, jsonsURL) in jsonsURLs.enumerated() {
     print("")
 }
 
+for i in ["il100",
+          "il60",
+          "il80",
+          "il90",
+          "pl100",
+          "pl120",
+          "pl15",
+          "pl20",
+          "pl30",
+          "pl40",
+          "pl5",
+          "pl50",
+          "pl60",
+          "pl70",
+          "pl80",
+          "pr40",
+          "pr60"]
+{
+    if Counter["交通标志"]![i] == nil {
+        Counter["交通标志"]![i] = 0
+    }
+}
+
 print("\n-------------------Done----------------------------------------------")
 print("saved to \(output_cocoURL)\n")
 do {
     try JSONEncoder().encode(coco_json).write(to: output_cocoURL)
 }
-
 
 print("\n-------------------Supercategory Insight----------------------------------------------")
 print("road_arrow types: \(roadArrowtype)\n")
@@ -148,7 +179,7 @@ print("traffic_light color: \(trafficLightColor)\n")
 print("traffic_sign type: \(trafficSigntype)")
 
 print("\n-------------------Summary----------------------------------------------")
-//check how many images in imageURL
+// check how many images in imageURL
 let images = try FileManager.default.contentsOfDirectory(at: imageURL, includingPropertiesForKeys: nil, options: .skipsSubdirectoryDescendants)
 let total_images = images.count
 print("Total \(total_images) images in \(imageURL.absoluteURL)\n")
@@ -159,6 +190,12 @@ for jsonsURL in jsonsURLs {
     let total = jsons.count
     print("Total \(total) json files in \(jsonsURL.absoluteURL)")
 }
+
 print("\nTotal \(coco_json.images.count) images have annotations")
-print("Instance Count for each Supercategory")
+print("\nInstance Count for each Supercategory")
 print(supercategoryCounter)
+
+print("\nInstance Count for each Category")
+for (key, value) in Counter {
+    print("\(key): \(value)")
+}
