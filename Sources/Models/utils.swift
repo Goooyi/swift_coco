@@ -110,3 +110,32 @@ func createDefaultCocoJson(datasetConfigURL: URL) -> CocoAnno {
     )
     return coco_anno
 }
+
+func createImageEntry (image_id: Int, file_name: String, height: Int, width: Int, date_captured: String = "", license: Int = 0) -> CocoImage {
+    let coco_image = CocoImage(
+        id: image_id,
+        license: license,
+        file_name: file_name,
+        height: height,
+        width: width,
+        date_captured: date_captured
+    )
+    return coco_image
+}
+
+// func type2categoryName(supercategory: String, type: String, color: String) -> String {
+//     var res = ""
+//     switch supercategory {
+//     case "交通灯":
+//         if type == "left" {
+//             res = "背景"
+//         }
+//     case "交通标志":
+//         res =  ""
+//     case "路面箭头":
+//         res = "停止线"
+//     default:
+//         res = supercategory
+//     }
+//     return res
+// }
