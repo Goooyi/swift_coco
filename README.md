@@ -10,23 +10,14 @@ None. Since swift package [SwiftyJson](https://swiftpackageindex.com/SwiftyJSON/
 ## TODO
 
 - [ ] Image `id` filed is mapped to it's index on the `images` fileds, so mergeing with other source annotated `.json` file may cause conflict
-- [ ] `file_name` in the image name is named as absolute path since images can locate at different directories.
+- [x] `file_name` in the image name is named as absolute path since images can locate at different directories.
 - [ ] split train/val/test :
-- [x] To ensure consistant category2id mapping, SHA256 hashmap is used and save in `./Config/categroy2id_hashmap.txt`. If the traning framework like detectron2 force the category-id do not surpass the totoal amount of categories available in the annotations(e.g. total 80 categories, but the dog category has an id 80(the most great id is supposed to be 79)), user should modify there own coco-json annotation.
 
 ## Notice
 
 1. coco format set category id=0 as `background` class. When training with [detectron2](https://github.com/facebookresearch/detectron2) framework, the totoal class param in your config should be set to total_class_num + 1(background class)
 1. totoal number of class is determined at run time, according to the given axera anno json file. So if an category is not present in original axera anno, it will not present in coco anno.
-1. id to name mapping format in the .txt file:
-`A B`, A is  the `categoryName` field in the axera anno(为中文字符), also serverd as `supercategory` filed in coco annotation, B is the uft8 string that represent the category used by coco anno.
-e.g.
-```txt
-背景 background
-路面箭头 Road_Arrow
-人行横道 Crosswalk
-停止线 Stop-line
-```
+1. To ensure consistant category2id mapping, SHA256 hashmap is used and save in `./Config/categroy2id_hashmap.txt`. If the traning framework like detectron2 force the category-id do not surpass the totoal amount of categories available in the annotations(e.g. total 80 categories, but the dog category has an id 80(the most great id is supposed to be 79)), user should modify there own coco-json annotation.
 
 ## Reference: Structure of coco format
 ```json
