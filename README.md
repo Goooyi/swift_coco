@@ -2,31 +2,30 @@
 Map axera json annotation format toto coco annotation format
 
 ## Installation
-[Install](https://www.swift.org/install/) swift 5.8.1
+[Install](https://www.swift.org/install/) swift 5.8.1 or use the devcontainer settings in this code base.
 
 ## Package used?
 None. Since swift package [SwiftyJson](https://swiftpackageindex.com/SwiftyJSON/SwiftyJSON) not compitable with Linux for now, so write entirely using swift natively on Linux [JSONDecoder](https://developer.apple.com/documentation/foundation/jsondecoder).
 
 ## TODO
 
-- [ ] fixed id2category mapping
 - [ ] Image `id` filed is mapped to it's index on the `images` fileds, so mergeing with other source annotated `.json` file may cause conflict
 - [ ] `file_name` in the image name is named as absolute path since images can locate at different directories.
 - [ ] split train/val/test :
-- [x] For the purpose of continue training of models with new data, fix categoryid2name mapping by an config `.txt` file
+- [x] To ensure consistant category2id mapping, SHA256 hashmap is used and save in `./Config/categroy2id_hashmap.txt`. If the traning framework like detectron2 force the category-id do not surpass the totoal amount of categories available in the annotations(e.g. total 80 categories, but the dog category has an id 80(the most great id is supposed to be 79)), user should modify there own coco-json annotation.
 
 ## Notice
 
 1. coco format set category id=0 as `background` class. When training with [detectron2](https://github.com/facebookresearch/detectron2) framework, the totoal class param in your config should be set to total_class_num + 1(background class)
-1. totoal number of class is determined at run time, according to the given axera anno json file. So if an category is not present in original axera anno, it will not present in coco anno.(TODO: fixed id2category mapping)
+1. totoal number of class is determined at run time, according to the given axera anno json file. So if an category is not present in original axera anno, it will not present in coco anno.
 1. id to name mapping format in the .txt file:
-`A B C`, A is the categoryID, B is the `categoryName` field in the axera anno(为中文字符), C is the uft8 string that represent the category used by coco anno.
+`A B`, A is  the `categoryName` field in the axera anno(为中文字符), also serverd as `supercategory` filed in coco annotation, B is the uft8 string that represent the category used by coco anno.
 e.g.
 ```txt
-0 背景 background
-1 路面箭头 Road_Arrow
-2 人行横道 Crosswalk
-3 停止线 Stop-line
+背景 background
+路面箭头 Road_Arrow
+人行横道 Crosswalk
+停止线 Stop-line
 ```
 
 ## Reference: Structure of coco format
