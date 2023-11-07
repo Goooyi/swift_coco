@@ -6,11 +6,11 @@
             "sourceLanguages": [
                 "swift"
             ],
-            "name": "Debug swift_coco",
-            "program": "${workspaceFolder:swift_coco}/.build/debug/swift_coco",
+            "name": "Debug helloSwift (learn_swift)",
+            "program": "${workspaceFolder:swift}/learn_swift/.build/debug/helloSwift",
             "args": [],
-            "cwd": "${workspaceFolder:swift_coco}",
-            "preLaunchTask": "swift: Build Debug swift_coco"
+            "cwd": "${workspaceFolder:swift}/learn_swift",
+            "preLaunchTask": "swift: Build Debug helloSwift (learn_swift)"
         },
         {
             "type": "lldb",
@@ -18,11 +18,83 @@
             "sourceLanguages": [
                 "swift"
             ],
-            "name": "Release swift_coco",
-            "program": "${workspaceFolder:swift_coco}/.build/release/swift_coco",
+            "name": "Release helloSwift (learn_swift)",
+            "program": "${workspaceFolder:swift}/learn_swift/.build/release/helloSwift",
             "args": [],
-            "cwd": "${workspaceFolder:swift_coco}",
-            "preLaunchTask": "swift: Build Release swift_coco"
+            "cwd": "${workspaceFolder:swift}/learn_swift",
+            "preLaunchTask": "swift: Build Release helloSwift (learn_swift)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Debug App (learn_swift/HelloVapor)",
+            "program": "${workspaceFolder:swift}/learn_swift/HelloVapor/.build/debug/App",
+            "args": [],
+            "cwd": "${workspaceFolder:swift}/learn_swift/HelloVapor",
+            "preLaunchTask": "swift: Build Debug App (learn_swift/HelloVapor)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Release App (learn_swift/HelloVapor)",
+            "program": "${workspaceFolder:swift}/learn_swift/HelloVapor/.build/release/App",
+            "args": [],
+            "cwd": "${workspaceFolder:swift}/learn_swift/HelloVapor",
+            "preLaunchTask": "swift: Build Release App (learn_swift/HelloVapor)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Debug helloSwift (learn_swift/helloSwift)",
+            "program": "${workspaceFolder:swift}/learn_swift/helloSwift/.build/debug/helloSwift",
+            "args": [],
+            "cwd": "${workspaceFolder:swift}/learn_swift/helloSwift",
+            "preLaunchTask": "swift: Build Debug helloSwift (learn_swift/helloSwift)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Release helloSwift (learn_swift/helloSwift)",
+            "program": "${workspaceFolder:swift}/learn_swift/helloSwift/.build/release/helloSwift",
+            "args": [],
+            "cwd": "${workspaceFolder:swift}/learn_swift/helloSwift",
+            "preLaunchTask": "swift: Build Release helloSwift (learn_swift/helloSwift)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Debug swift_coco (swift_coco)",
+            "program": "${workspaceFolder:swift}/swift_coco/.build/debug/swift_coco",
+            "args": [],
+            "cwd": "${workspaceFolder:swift}/swift_coco",
+            "preLaunchTask": "swift: Build Debug swift_coco (swift_coco)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "name": "Release swift_coco (swift_coco)",
+            "program": "${workspaceFolder:swift}/swift_coco/.build/release/swift_coco",
+            "args": [],
+            "cwd": "${workspaceFolder:swift}/swift_coco",
+            "preLaunchTask": "swift: Build Release swift_coco (swift_coco)"
         }
     ]
 }

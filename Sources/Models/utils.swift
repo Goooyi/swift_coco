@@ -54,33 +54,11 @@ func calBboxFromCocoSeg(polygon_points_array: [[Double]]) -> [Double] {
     return [minX, minY, maxX - minX, maxY - minY]
 }
 
-func extractCn2EngNameMapping(datasetConfigURL: URL) -> [String: String] {
-    // parse category
-    var nameMapping = [String: String]()
-    let fileContents = try! String(contentsOf: datasetConfigURL)
-    let lines = fileContents.components(separatedBy: "\n")
-    for line in lines {
-        let parts = line.split(separator: " ")
-        let CNname = String(parts[1])
-        let ENGname = String(parts[2])
-        nameMapping[CNname] = ENGname
-    }
-    return nameMapping
-}
 
-func createDefaultCocoJson(datasetConfigURL: URL) -> CocoAnno {
+func createDefaultCocoJson() -> CocoAnno {
     var coco_categories = [CocoCategory]()
-    // parse category
-    let fileContents = try! String(contentsOf: datasetConfigURL)
-    let lines = fileContents.components(separatedBy: "\n")
-    for line in lines {
-        let parts = line.split(separator: " ")
-        let id = Int(parts[0])!
-        let name = String(parts[2])
-
-        let category = CocoCategory(id: id, name: name, supercategory: "")
-        coco_categories.append(category)
-    }
+    let backgoundAnno = CocoCategory(id:0, name:"background", supercategory:"")
+    coco_categories.append(backgoundAnno)
 
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -128,11 +106,11 @@ func supercategory2category(supercategory: String, type: String, color: String, 
     switch supercategory {
     case "交通灯":
         if type != "unknown", ["red", "yellow", "green", "black"].contains(color) {
-            res = color
+            res = "TFL_" + color
         }
     case "路面箭头":
         if type != "unknown" {
-            res = type
+            res = "RoadArrow_" + type
         }
 
     case "交通标志":
@@ -153,10 +131,14 @@ func supercategory2category(supercategory: String, type: String, color: String, 
             "pl80",
             "pr40",
             "pr60"].contains(typeCN) {
-            res = typeCN
-            } else if type != "unknown" {
-                res = "other"
+            res = "TFS_" + typeCN
+            } else if typeCN != "unknown" {
+                res = "TFS_other"
             }
+    case "停止线":
+        res = "stop_line"
+    case "人行横道":
+        res = "crosswalk"
     default:
         res = supercategory
     }

@@ -1,0 +1,40 @@
+{
+    "name": "swift",
+    "runArgs": ["--hostname", "gn0_34_swift", "--security-opt", "seccomp=unconfined", "--shm-size", "64g", "-m", "48g", "--cpus", "36","--name", "${localEnv:USER}_gn0_34"],
+    "containerEnv": {
+		"NVIDIA_VISIBLE_DEVICES": "3,4"
+	},
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ibm.output-colorizer",
+                "rafamel.subtle-brackets"
+            ]
+        }
+    },
+
+    "remoteUser": "yi",
+    "updateRemoteUserUID": false,
+    "containerUser": "yi",
+    "mounts": [
+        "source=/home/gaoyi/code,target=/code,type=bind,consistency=cached",
+        "source=/data,target=/data,type=bind,consistency=cached"
+	]
+	// "features": {
+	// 	"ghcr.io/devcontainers-contrib/features/starship-homebrew:1": {
+	// 		"version": "latest"
+	// 	},
+    //     "ghcr.io/devcontainers-contrib/features/nnn-homebrew:1": {
+	// 		"version": "latest"
+	// 	},
+	// 	"ghcr.io/devcontainers-contrib/features/neovim-homebrew:1": {
+	// 		"version": "latest"
+	// 	},
+	// 	"ghcr.io/devcontainers-contrib/features/tmux-homebrew:1": {
+	// 		"version": "latest"
+	// 	}
+	// }
+}
