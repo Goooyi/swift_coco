@@ -27,6 +27,11 @@ func extractCocoSeg(axera_inst: AxeraInstance) -> [[Double]] {
         }
         polygon_points_array.append(curSeg)
     }
+    // issue related to cocoapi `https://github.com/cocodataset/cocoapi/issues/139`
+    if polygon_points_array[0].count == 4 {
+        polygon_points_array[0].append(polygon_points_array[0][0])
+        polygon_points_array[0].append(polygon_points_array[0][1])
+    }
     return polygon_points_array
 }
 

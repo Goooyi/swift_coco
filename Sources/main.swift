@@ -194,10 +194,13 @@ for i in ["il100",
 }
 
 print("\n-------------------Done----------------------------------------------")
-print("saved to \(output_cocoURL)\n")
+let cocoFileHandle = try! FileHandle(forWritingTo: output_cocoURL)
+try cocoFileHandle.truncate(atOffset: 0) // clear contents
+try cocoFileHandle.close()
 do {
     try JSONEncoder().encode(coco_json).write(to: output_cocoURL)
 }
+print("saved to \(output_cocoURL)\n")
 
 print("\n-------------------Supercategory Insight----------------------------------------------")
 print("road_arrow types: \(roadArrowtype)\n")
