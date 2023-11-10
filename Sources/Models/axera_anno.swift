@@ -34,6 +34,7 @@ struct AxeraCameraFrame: Codable {
     enum CodingKeys: String, CodingKey {
         case shapeType
         case shape
+        case attributes
     }
 
     init(from decoder: Decoder) throws {
@@ -72,6 +73,15 @@ struct AxeraCameraFrame: Codable {
         default:
             shape = nil
         }
+
+        // important
+        if let attributesContainer = try? container.decode([String: String].self, forKey: .attributes) {
+            attributes = attributesContainer
+        } else if let emptyString = try? container.decodeIfPresent(String.self, forKey: .attributes), emptyString == "" {
+            attributes = nil
+        } else {
+            attributes = nil
+        }
     }
 }
 
@@ -108,7 +118,6 @@ struct AxeraInstance: Codable {
     var categoryName: String
     var number: Int
     var children: [AxeraChild]
-    // var attributes: [String: String]?
     // deal with `attributes` sometimes is "", sometimes is a [string:string] pair
     var attributes: [String: String]?
 
@@ -143,4 +152,19 @@ struct AxeraImageAnno: Codable {
     var relationships: [[String: String]]
     var attributes: [String: String]?
     var statistics: String
+
+    // private enum CodingKeys: String, CodingKey {
+    //     case attributes
+    // }
+
+    // init(from decoder: Decoder) throws {
+    //     let container = try decoder.container(keyedBy: CodingKeys.self)
+    //     if let attributesContainer = try? container.decode([String: String].self, forKey: .attributes) {
+    //         attributes = attributesContainer
+    //     } else if let emptyString = try? container.decodeIfPresent(String.self, forKey: .attributes), emptyString == "" {
+    //         attributes = nil
+    //     } else {
+    //         attributes = nil
+    //     }
+    // }
 }

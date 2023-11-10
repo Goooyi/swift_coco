@@ -7,10 +7,10 @@ import Foundation
 // define the path to input json files
 // TODO: logging enable
 var jsonsURLs = [URL]()
-jsonsURLs.append(URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/ANNOTATION_ROADMARK/FRONT_rect/"))
+jsonsURLs.append(URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/ANNOTATION_TRAFFIC/FRONT_WIDE_rect/"))
 jsonsURLs.append(URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/ANNOTATION_TRAFFIC/FRONT_rect/"))
 let imageURL = URL(fileURLWithPath: "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/IMAGE/FRONT_rect")
-let output_cocoURL = URL(fileURLWithPath: "/code/gaoyi_dataset/coco/aXcellent_roadmark_FRONT_rect/annotations/all_FRONT_rect_RM_tfs_tfl_1106.json")
+let output_cocoURL = URL(fileURLWithPath: "/code/gaoyi_dataset/coco/aXcellent_roadmark_FRONT_rect/annotations/all_FRONT_rect_tfs_tfl_1108_Xpilot.json")
 let parentDirectoryURL = output_cocoURL.deletingLastPathComponent()
 
 let decoder = JSONDecoder()
@@ -23,6 +23,14 @@ var roadArrowtype: Set<String> = []
 var trafficLighttype: Set<String> = []
 var trafficLightColor: Set<String> = []
 var trafficSigntype: Set<String> = []
+
+var childrenTFLCounter: [String: Int] = [:]
+var childrenTFSCounter: [String: Int] = [:]
+
+var childrenTFLcolorCounter: [String: Int] = [:]
+var childrenTFLImageCounter = 0
+var childrenTFSTypeCounter: [String: Int] = [:]
+var childrenTFSImageCounter = 0
 
 do {
     try FileManager.default.createDirectory(at: parentDirectoryURL, withIntermediateDirectories: true, attributes: nil)
@@ -65,6 +73,8 @@ for (jsonFileCount, jsonsURL) in jsonsURLs.enumerated() {
 
                 // TODO: for now if all instance of this image is type:unkown, the cocoImage will not be added
                 // create a set to store different names
+                var Marker = false
+                var Marker2 = false
                 for inst in axera_img_anno.instances {
                     let supercategoryName = inst.categoryName
                     // TODO: intergreate this swich syntax to logging system
@@ -86,11 +96,54 @@ for (jsonFileCount, jsonsURL) in jsonsURLs.enumerated() {
                         break
                     }
 
-                    // skip if a supercategory that should have sub atttributes, but attributes is nil
+                    if ["交通灯"].contains(supercategoryName),
+                       inst.children[0].cameras[0].frames[0].attributes?["color"] != nil
+                    {
+                        let tmp = inst.children[0].cameras[0].frames[0].attributes?["color"] ?? "unknown"
+                        if tmp != "unknown" {
+                            Marker = true
+                        }
+
+                        let curType = inst.children[0].cameras[0].frames[0].attributes?["type"] ?? "unknown"
+                        let tmpName = "Type_" + curType + "_Color_" + (inst.children[0].cameras[0].frames[0].attributes?["color"] ?? "default_color")
+                        if let count = childrenTFLCounter[tmpName] {
+                            childrenTFLCounter[tmpName] = count + 1
+                        } else {
+                            childrenTFLCounter[tmpName] = 1
+                        }
+
+                        if let count = childrenTFLcolorCounter[inst.children[0].cameras[0].frames[0].attributes?["color"] ?? "unknown"] {
+                            childrenTFLcolorCounter[inst.children[0].cameras[0].frames[0].attributes?["color"] ?? "unknown"] = count + 1
+                        } else {
+                            childrenTFLcolorCounter[inst.children[0].cameras[0].frames[0].attributes?["color"] ?? "unknown"] = 1
+                        }
+                    }
+                    if ["交通标志"].contains(supercategoryName),
+                       inst.children[0].cameras[0].frames[0].attributes?["type"] != nil
+                    {
+                        let tmp = inst.children[0].cameras[0].frames[0].attributes?["type"] ?? "unknown"
+                        if tmp != "unknown" {
+                            Marker2 = true
+                        }
+                        let curType = (inst.children[0].cameras[0].frames[0].attributes?["type"] ?? "unknown")
+                        if let count = childrenTFSCounter[curType] {
+                            childrenTFSCounter[curType] = count + 1
+                        } else {
+                            childrenTFSCounter[curType] = 1
+                        }
+
+                        if let count = childrenTFSTypeCounter[(inst.children[0].cameras[0].frames[0].attributes?["type"] ?? "unknown")] {
+                            childrenTFSTypeCounter[(inst.children[0].cameras[0].frames[0].attributes?["type"] ?? "unknown")] = count + 1
+                        } else {
+                            childrenTFSTypeCounter[(inst.children[0].cameras[0].frames[0].attributes?["type"] ?? "unknown")] = 1
+                        }
+                    }
+
+                    // skip if a supercategory that should have sub attributes, but attributes is nil
                     if ["交通灯", "路面箭头", "交通标志"].contains(supercategoryName), inst.attributes == nil {
                         continue
                     }
-                    // only save those defined in supercategory2category
+
                     let categoryName = supercategory2category(supercategory: supercategoryName, type: inst.attributes?["type"] ?? "unknown", color: inst.attributes?["color"] ?? "unknown", typeCN: inst.attributes?["类型"] ?? "unknown")
                     if categoryName == "unknown" {
                         continue
@@ -147,6 +200,15 @@ for (jsonFileCount, jsonsURL) in jsonsURLs.enumerated() {
                     )
                     coco_json.annotations.append(cocoInstanceAnnotation)
                 }
+
+                if Marker {
+                    childrenTFLImageCounter += 1
+                    Marker = false
+                }
+                if Marker2 {
+                    childrenTFSImageCounter += 1
+                    Marker = false
+                }
             } catch {
                 print("Error when decode \(cur_json)")
                 print("\(error)")
@@ -194,12 +256,17 @@ for i in ["il100",
 }
 
 print("\n-------------------Done----------------------------------------------")
-let cocoFileHandle = try! FileHandle(forWritingTo: output_cocoURL)
-try cocoFileHandle.truncate(atOffset: 0) // clear contents
-try cocoFileHandle.close()
+// check if output_cocoURL exists
+if FileManager.default.fileExists(atPath: output_cocoURL.path) {
+    let cocoFileHandle = try! FileHandle(forWritingTo: output_cocoURL)
+    try cocoFileHandle.truncate(atOffset: 0) // clear contents
+    try cocoFileHandle.close()
+}
+
 do {
     try JSONEncoder().encode(coco_json).write(to: output_cocoURL)
 }
+
 print("saved to \(output_cocoURL)\n")
 
 print("\n-------------------Supercategory Insight----------------------------------------------")
@@ -228,4 +295,40 @@ print(supercategoryCounter)
 print("\nInstance Count for each Category")
 for (key, value) in counter {
     print("\(key): \(value)")
+}
+
+
+print("")
+print("Total TFL children images: \(childrenTFLImageCounter)")
+print("children TFL color counter")
+for item in childrenTFLcolorCounter.sorted(by: { $0.0 > $1.0 }) {
+    print("\(item.0): \(item.1)")
+}
+
+
+print("")
+print("Total TFS images children: \(childrenTFSImageCounter)")
+print("children TFS type counter")
+for item in childrenTFSTypeCounter.sorted(by: { $0.0 > $1.0 }) {
+    if ["il100",
+        "il60",
+        "il80",
+        "il90",
+        "pl100",
+        "pl120",
+        "pl15",
+        "pl20",
+        "pl30",
+        "pl40",
+        "pl5",
+        "pl50",
+        "pl60",
+        "pl70",
+        "pl80",
+        "pr40",
+        "pr60",
+        "unknown"].contains(item.0)
+    {
+        print("\(item.0): \(item.1)")
+    }
 }
