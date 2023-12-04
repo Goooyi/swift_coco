@@ -15,8 +15,151 @@ struct AxeraFrameFrame: Codable {
 }
 
 struct AxeraFrame: Codable {
-    var camera: String
-    var frames: [AxeraFrameFrame]
+    struct Position: Codable {
+        var x: Double
+        var y: Double
+        var z: Double
+    }
+
+    struct Rotation: Codable {
+        var x: Double
+        var y: Double
+        var z: Double
+    }
+
+    struct Dimension: Codable {
+        var x: Double
+        var y: Double
+        var z: Double
+    }
+
+    struct Quaternion: Codable {
+        var x: Double
+        var y: Double
+        var z: Double
+        var w: Double
+    }
+
+        struct PointCount: Codable {
+            var lidar: Int
+        }
+    struct FrameItems: Codable {
+
+        struct LabelsObj: Codable {
+            var activity: String
+            var visibility: String
+            var point_xor_cam: String
+        }
+
+        struct Rotation2: Codable {
+            var x: Double
+            var y: Double
+            var z: Double
+        }
+
+        var type: String
+        var position: Position
+        var rotation: Rotation
+        var dimension: Dimension
+        var quaternion: Quaternion
+
+        var category: String
+        var id: String
+        var number: Int
+        var interpolated: Bool
+        var frameNum: Int
+        var pointCount: PointCount
+        var labels: String
+        var isEmpty: Bool
+        var annotatedBy: String
+        var reviewKey: String
+        var labelsObj: LabelsObj
+        var rotation2: Rotation2
+        var item_id: Int?
+    }
+
+    struct FrameImages: Codable {
+        struct CameraCubes: Codable {
+            // Annotion in axera formamt has this filed but not filled yet
+        }
+
+        struct CameraCubesCasts: Codable {
+            // Annotion in axera formamt has this filed but not filled yet
+        }
+
+        struct FrameImagesAttribute: Codable {
+            // Annotion in axera formamt has this filed but not filled yet
+        }
+
+        struct FrameImagesItem: Codable {
+            struct FrameImagesItemLabels: Codable {
+                // Annotion in axera formamt has this filed but not filled yet
+            }
+            struct FrameImagesItemPoints: Codable {
+                var x: [Double]
+                var y: [Double]
+            }
+            struct FrameImagesItemInvisibleIndex: Codable {
+                // Annotion in axera formamt has this filed but not filled yet
+            }
+
+            struct FrameImagesItemLabelsObj: Codable {
+                // Annotion in axera formamt has this filed but not filled yet
+            }
+            var type: String
+            var id: String
+            var number: Int
+            var category: String
+            var frameNum: Int
+            var imageNum: Int
+
+            var position: Position
+            var rotation: Rotation
+            var labels: FrameImagesItemLabels? // TODO: null in json
+            var isManual: Bool
+            var points: FrameImagesItemPoints
+            var invisibleIndex: FrameImagesItemInvisibleIndex
+            var reviewKey: String
+            var labelsObj: FrameImagesItemLabelsObj? // TODO: null in json
+        }
+
+        var image: String
+        var imageUrlInternal: String
+        var imageUrlExternal: String
+        var width: Int
+        var height: Int
+        var items: [FrameImagesItem]
+        var cameraCubes: [CameraCubes]
+        var cameraCubeCasts: [CameraCubesCasts]
+        var attribute: FrameImagesAttribute?
+    }
+
+    struct Instance3DAttributes: Codable {
+        // Annotion in axera formamt has this filed but not filled yet
+    }
+
+    struct relations: Codable {
+        // Annotion in axera formamt has this filed but not filled yet
+    }
+
+    struct boundary: Codable {
+        // Annotion in axera formamt has this filed but not filled yet
+    }
+
+    var camera: String? // 2D axera anno exclusively
+    var frames: [AxeraFrameFrame]? // 2D axera anno exclusively
+    var frameId: Int? // 3D axera anno exclusively
+    var frameUrl: String? // 3D axera anno exclusively
+    var frameUrlInternal: String? // 3D axera anno exclusively
+    var frameUrlExternal: String? // 3D axera anno exclusively
+    var items: [FrameItems]? // 3D axera anno exclusively
+    var images: [FrameImages]? // 3D axera anno exclusively
+    var attribute: String? // 3D axera anno exclusively
+    var instanceAttributes: [Instance3DAttributes]? // 3D axera anno exclusively
+    var relations: [relations]? // 3D axera anno exclusively
+    var isValid: Bool? // 3D axera anno exclusively
+    var groundY: Double? // 3D axera anno exclusively
+    var boundary: boundary? // 3D axera anno exclusively
 }
 
 struct AxeraCameraFrame: Codable {
@@ -146,6 +289,7 @@ struct AxeraInstance: Codable {
 // defines axera shapes
 
 struct AxeraImageAnno: Codable {
+    var baseUrl: String? // 3D axera anno exclusively
     var auditId: String
     var instances: [AxeraInstance]
     var frames: [AxeraFrame]

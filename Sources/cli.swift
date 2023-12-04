@@ -91,7 +91,7 @@ struct SwiftCOCO: ParsableCommand {
         print("Processing items...")
         for (jsonFileCount, jsonsURL) in jsonsURLs.enumerated() {
             // choose imgageURL by check if `jsonsURL` have `WIDE` in his path string
-            // TODO: better logic
+            // TODO: better logic to assign json annotion to xfv/xpilot
             let imageURL = jsonsURL.lastPathComponent.contains("WIDE") ? "FRONT_WIDE_rect" : "FRONT_rect"
             print("Processing item \(jsonFileCount + 1) of total \(jsonsURLs.count) given json source")
             let jsons: [URL]
@@ -222,11 +222,19 @@ struct SwiftCOCO: ParsableCommand {
                             let file_path = imageURL + "/" + cur_json.deletingPathExtension().appendingPathExtension("jpg").lastPathComponent
                             if file_name2id[file_path] == nil {
                                 file_name2id[file_path] = coco_json.images.count
+                                var axera_img_anno_height: Int
+                                var axera_img_anno_width: Int
+                                if let axera_img_anno_frames = axera_img_anno.frames[0].frames {
+                                    axera_img_anno_height = axera_img_anno_frames[0].imageHeight
+                                    axera_img_anno_width = axera_img_anno_frames[0].imageWidth
+                                } else {
+                                    fatalError("Failed to find filed `frames[0].frames[0]` in axerao annotion, which is required for type=2D")
+                                }
                                 let cocoImage = createImageEntry(
                                     image_id: file_name2id[file_path]!,
                                     file_name: file_path, // last two path component
-                                    height: axera_img_anno.frames[0].frames[0].imageHeight,
-                                    width: axera_img_anno.frames[0].frames[0].imageWidth
+                                    height: axera_img_anno_height,
+                                    width: axera_img_anno_width
                                 )
                                 coco_json.images.append(cocoImage)
                             }

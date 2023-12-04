@@ -7,6 +7,14 @@ Map axera json annotation format toto coco annotation format
 ## Package used?
 None. Since swift package [SwiftyJson](https://swiftpackageindex.com/SwiftyJSON/SwiftyJSON) not compitable with Linux for now, so write entirely using swift natively on Linux [JSONDecoder](https://developer.apple.com/documentation/foundation/jsondecoder).
 
+## Usage
+
+Example
+
+```bash
+swift run swift_coco --type 2D --axera-anno-path axera_anno/root1/ --axera-anno-path axera_anno/root2/ --axera-img-path /example/axera_img/root --out-json-path out.json
+```
+
 ## TODO
 
 - [ ] Image `id` filed is mapped to it's index on the `images` fileds, so mergeing with other source annotated `.json` file may cause conflict
