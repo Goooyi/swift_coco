@@ -8,7 +8,7 @@ struct AxeraFrameFrame: Codable {
     // deal with dynamic defined attr
     var attributes: [String: String]?
 
-    enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
         case imageUrl, frameIndex, valid, imageWidth, imageHeight, rotation
         case attributes
     }
@@ -40,11 +40,11 @@ struct AxeraFrame: Codable {
         var w: Double
     }
 
-        struct PointCount: Codable {
-            var lidar: Int
-        }
-    struct FrameItems: Codable {
+    struct PointCount: Codable {
+        var lidar: Int
+    }
 
+    struct FrameItems: Codable {
         struct LabelsObj: Codable {
             var activity: String
             var visibility: String
@@ -69,13 +69,75 @@ struct AxeraFrame: Codable {
         var interpolated: Bool
         var frameNum: Int
         var pointCount: PointCount
-        var labels: String
-        var isEmpty: Bool
-        var annotatedBy: String
-        var reviewKey: String
-        var labelsObj: LabelsObj
+        var labels: String?
+        var isEmpty: Bool?
+        var annotatedBy: String?
+        var reviewKey: String?
+        var labelsObj: LabelsObj?
         var rotation2: Rotation2
         var item_id: Int?
+
+        // deal with `labels` sometiems is String sometimes is `null` in json
+        private enum CodingKeys: String, CodingKey {
+            case type, position, rotation, dimension,
+                 quaternion, category, id, number,
+                 interpolated, frameNum, pointCount, labels,
+                 isEmpty, annotatedBy, reviewKey,
+                 rotation2,item_id,labelsObj
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+
+            type = try container.decode(String.self, forKey: .type)
+            position = try container.decode(Position.self, forKey: .position)
+            rotation = try container.decode(Rotation.self, forKey: .rotation)
+            dimension = try container.decode(Dimension.self, forKey: .dimension)
+            quaternion = try container.decode(Quaternion.self, forKey: .quaternion)
+            category = try container.decode(String.self, forKey: .category)
+            id = try container.decode(String.self, forKey: .id)
+            number = try container.decode(Int.self, forKey: .number)
+            interpolated = try container.decode(Bool.self, forKey: .interpolated)
+            frameNum = try container.decode(Int.self, forKey: .frameNum)
+            pointCount = try container.decode(PointCount.self, forKey: .pointCount)
+            rotation2 = try container.decode(Rotation2.self, forKey: .rotation2)
+
+            if let labelsObjContainer = try? container.decode(LabelsObj.self, forKey: .labelsObj) {
+                labelsObj = labelsObjContainer
+            } else {
+                labelsObj = nil
+            }
+
+            if let labelsContainer = try? container.decode(String.self, forKey: .labels) {
+                labels = labelsContainer
+            } else {
+                labels = nil
+            }
+
+            if let item_idContainer = try? container.decode(Int.self, forKey: .item_id) {
+                item_id = item_idContainer
+            } else {
+                item_id = nil
+            }
+
+            if let reviewKeyContainer = try? container.decode(String.self, forKey: .reviewKey) {
+                reviewKey = reviewKeyContainer
+            } else {
+                reviewKey = nil
+            }
+
+            if let annotatedByContainer = try? container.decode(String.self, forKey: .annotatedBy) {
+                annotatedBy = annotatedByContainer
+            } else {
+                annotatedBy = nil
+            }
+
+            if let isEmptyContainer = try? container.decode(Bool.self, forKey: .isEmpty) {
+                isEmpty = isEmptyContainer
+            } else {
+                isEmpty = nil
+            }
+        }
     }
 
     struct FrameImages: Codable {
@@ -92,13 +154,25 @@ struct AxeraFrame: Codable {
         }
 
         struct FrameImagesItem: Codable {
+            struct FrameImagesItemPosition: Codable {
+                var x: Double
+                var y: Double
+            }
+
+            struct FrameImagesItemRotation: Codable {
+                var x: Double
+                var y: Double
+            }
+
             struct FrameImagesItemLabels: Codable {
                 // Annotion in axera formamt has this filed but not filled yet
             }
+
             struct FrameImagesItemPoints: Codable {
                 var x: [Double]
                 var y: [Double]
             }
+
             struct FrameImagesItemInvisibleIndex: Codable {
                 // Annotion in axera formamt has this filed but not filled yet
             }
@@ -106,6 +180,7 @@ struct AxeraFrame: Codable {
             struct FrameImagesItemLabelsObj: Codable {
                 // Annotion in axera formamt has this filed but not filled yet
             }
+
             var type: String
             var id: String
             var number: Int
@@ -113,8 +188,8 @@ struct AxeraFrame: Codable {
             var frameNum: Int
             var imageNum: Int
 
-            var position: Position
-            var rotation: Rotation
+            var position: FrameImagesItemPosition
+            var dimension: FrameImagesItemRotation
             var labels: FrameImagesItemLabels? // TODO: null in json
             var isManual: Bool
             var points: FrameImagesItemPoints
@@ -166,7 +241,6 @@ struct AxeraCameraFrame: Codable {
     var frameIndex: Int?
     var isKeyFrame: Bool?
     var shapeType: String?
-    // TODO: enum to deal with different shape
     var shape: BaseShape?
     var order: Int?
     var attributes: [String: String]?
@@ -174,7 +248,7 @@ struct AxeraCameraFrame: Codable {
     var isFormula: Bool?
     var OCRText: String?
 
-    enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
         case shapeType
         case shape
         case attributes
@@ -291,24 +365,9 @@ struct AxeraInstance: Codable {
 struct AxeraImageAnno: Codable {
     var baseUrl: String? // 3D axera anno exclusively
     var auditId: String
-    var instances: [AxeraInstance]
+    var instances: [AxeraInstance]?
     var frames: [AxeraFrame]
-    var relationships: [[String: String]]
+    var relationships: [[String: String]]?
     var attributes: [String: String]?
     var statistics: String
-
-    // private enum CodingKeys: String, CodingKey {
-    //     case attributes
-    // }
-
-    // init(from decoder: Decoder) throws {
-    //     let container = try decoder.container(keyedBy: CodingKeys.self)
-    //     if let attributesContainer = try? container.decode([String: String].self, forKey: .attributes) {
-    //         attributes = attributesContainer
-    //     } else if let emptyString = try? container.decodeIfPresent(String.self, forKey: .attributes), emptyString == "" {
-    //         attributes = nil
-    //     } else {
-    //         attributes = nil
-    //     }
-    // }
 }

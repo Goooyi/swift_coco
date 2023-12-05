@@ -20,6 +20,7 @@ swift run swift_coco --type 2D --axera-anno-path axera_anno/root1/ --axera-anno-
 - [ ] Image `id` filed is mapped to it's index on the `images` fileds, so mergeing with other source annotated `.json` file may cause conflict
 - [x] `file_name` in the image name is named as absolute path since images can locate at different directories.
 - [ ] split train/val/test :
+- [ ] refine cate2id_hashmap
 
 ## Notice
 

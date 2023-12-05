@@ -24,9 +24,43 @@ func extractCocoSeg(axera_inst: AxeraInstance) -> [[Double]] {
         default:
             // TODO:
             print("error")
+            fatalError("Extract CocoSeg not implemented for this category")
         }
         polygon_points_array.append(curSeg)
     }
+    // issue related to cocoapi `https://github.com/cocodataset/cocoapi/issues/139`
+    if polygon_points_array[0].count == 4 {
+        polygon_points_array[0].append(polygon_points_array[0][0])
+        polygon_points_array[0].append(polygon_points_array[0][1])
+    }
+    return polygon_points_array
+}
+
+func extract3DCocoSeg(axera_inst: AxeraFrame.FrameImages.FrameImagesItem) -> [[Double]] {
+    var polygon_points_array = [[Double]]()
+    let xs = axera_inst.points.x
+    let ys = axera_inst.points.y
+    // Axera 3D segmentation anno do polygon do not have hole anno for now
+    // so only one curSeg created.
+    var curSeg = [Double]()
+    // descpreced for now, order not clear in original annotation
+    // for i in stride(from: 0, to: xs.count, by: 1) {
+    //     curSeg.append(xs[i])
+    //     curSeg.append(ys[i])
+    // }
+    let leftTopX = axera_inst.position.x
+    let leftTopY = axera_inst.position.y
+    let xDim = axera_inst.dimension.x
+    let yDim = axera_inst.dimension.y
+    curSeg.append(leftTopX)
+    curSeg.append(leftTopY)
+    curSeg.append(leftTopX)
+    curSeg.append(leftTopY + yDim)
+    curSeg.append(leftTopX + xDim)
+    curSeg.append(leftTopY + yDim)
+    curSeg.append(leftTopX + xDim)
+    curSeg.append(leftTopY)
+    polygon_points_array.append(curSeg)
     // issue related to cocoapi `https://github.com/cocodataset/cocoapi/issues/139`
     if polygon_points_array[0].count == 4 {
         polygon_points_array[0].append(polygon_points_array[0][0])
