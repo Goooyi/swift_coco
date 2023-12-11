@@ -119,6 +119,9 @@ struct SwiftCOCO: ParsableCommand {
 
                                 for item in img.items {
                                     // TODO: clean seperator when annotated
+                                    if !visibleFor3DImageItem(axera_inst: item, axera_items: frame.items!) {
+                                        continue
+                                    }
                                     // count categories and supercategories
                                     let separators = CharacterSet(charactersIn: "_. ")
                                     let nameSeq = item.category.components(separatedBy: separators)
@@ -150,13 +153,31 @@ struct SwiftCOCO: ParsableCommand {
                                     }
 
                                     // create coco instance
-                                    let cur_box_area = item.dimension.x * item.dimension.y
-                                    let coco_anno_seg = extract3DCocoSeg(axera_inst: item)
+                                    let coco_anno_seg = extract3DCocoSeg(axera_inst: item, width: img.width, height: img.height)
+                                    var cur_box_x_min = coco_anno_seg[0][0]
+                                    var cur_box_y_min = coco_anno_seg[0][1]
+                                    var cur_box_x_max = coco_anno_seg[0][0]
+                                    var cur_box_y_max = coco_anno_seg[0][1]
+                                    for i in stride(from:2, to: coco_anno_seg[0].count, by:2) {
+                                        if coco_anno_seg[0][i] < cur_box_x_min {
+                                            cur_box_x_min = coco_anno_seg[0][i]
+                                        }
+                                        if coco_anno_seg[0][i] > cur_box_x_max {
+                                            cur_box_x_max = coco_anno_seg[0][i]
+                                        }
+                                        if coco_anno_seg[0][i+1] < cur_box_y_min {
+                                            cur_box_y_min = coco_anno_seg[0][i+1]
+                                        }
+                                        if coco_anno_seg[0][i+1] > cur_box_y_max {
+                                            cur_box_y_max = coco_anno_seg[0][i+1]
+                                        }
+                                    }
+                                    let cur_box_area = (cur_box_x_max - cur_box_x_min) * (cur_box_y_max - cur_box_y_min)
                                     let cocoInstanceAnnotation = CocoInstanceAnnotation(
                                         id: coco_json.annotations.count,
                                         image_id: file_name2id[file_path]!,
                                         category_id: curCategoryId!,
-                                        bbox: [item.position.x, item.position.y, item.dimension.x, item.dimension.y],
+                                        bbox: [cur_box_x_min, cur_box_y_min, cur_box_x_max - cur_box_x_min, cur_box_y_max - cur_box_y_min],
                                         segmentation: coco_anno_seg,
                                         area: cur_box_area,
                                         iscrowd: 0

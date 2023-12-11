@@ -65,7 +65,7 @@ struct AxeraFrame: Codable {
 
         var category: String
         var id: String
-        var number: Int
+        var number: Int?
         var interpolated: Bool
         var frameNum: Int
         var pointCount: PointCount
@@ -96,11 +96,16 @@ struct AxeraFrame: Codable {
             quaternion = try container.decode(Quaternion.self, forKey: .quaternion)
             category = try container.decode(String.self, forKey: .category)
             id = try container.decode(String.self, forKey: .id)
-            number = try container.decode(Int.self, forKey: .number)
             interpolated = try container.decode(Bool.self, forKey: .interpolated)
             frameNum = try container.decode(Int.self, forKey: .frameNum)
             pointCount = try container.decode(PointCount.self, forKey: .pointCount)
             rotation2 = try container.decode(Rotation2.self, forKey: .rotation2)
+
+            if let numberContainer = try? container.decode(Int.self, forKey: .number) {
+                number = numberContainer
+            } else {
+                number = 0
+            }
 
             if let labelsObjContainer = try? container.decode(LabelsObj.self, forKey: .labelsObj) {
                 labelsObj = labelsObjContainer
@@ -183,7 +188,7 @@ struct AxeraFrame: Codable {
 
             var type: String
             var id: String
-            var number: Int
+            var number: Double
             var category: String
             var frameNum: Int
             var imageNum: Int

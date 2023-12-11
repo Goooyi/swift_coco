@@ -1,5 +1,5 @@
 import Foundation
-// TODO: pass by reference?
+
 func extractCocoSeg(axera_inst: AxeraInstance) -> [[Double]] {
     var polygon_points_array = [[Double]]()
     for child in axera_inst.children {
@@ -36,10 +36,104 @@ func extractCocoSeg(axera_inst: AxeraInstance) -> [[Double]] {
     return polygon_points_array
 }
 
-func extract3DCocoSeg(axera_inst: AxeraFrame.FrameImages.FrameImagesItem) -> [[Double]] {
+func visibleFor3DImageItem(axera_inst: AxeraFrame.FrameImages.FrameImagesItem,
+                           axera_items: [AxeraFrame.FrameItems]) -> Bool
+{
+    let id = axera_inst.id
+    // find the id in axera_items
+    var visibilityStr = "invisible"
+    for item in axera_items {
+        if item.id == id {
+            visibilityStr = item.labelsObj?.visibility ?? "invisible"
+        }
+    }
+    if visibilityStr == "invisible" || visibilityStr.contains("0% - 30%") {
+        return false
+    } else {
+        return true
+    }
+}
+
+func scaleDown(
+    curFrameImagesItemPoints: AxeraFrame.FrameImages.FrameImagesItem.FrameImagesItemPoints,
+    width: Int,
+    height: Int
+) -> (
+    x_res: [Double],
+    y_res: [Double]
+) {
+    var x_res = [Double]()
+    var y_res = [Double]()
+    let count = curFrameImagesItemPoints.x.count
+    // find the first point that is inside the frame as scale base
+    // TODO: scale down all x,y points that is outside the image, x_base, y_base is the scale base
+    for i in 0 ..< count {
+        var x_ratio = 1.0
+        var y_ratio = 1.0
+
+        let indexIsOdd = i % 2 == 1
+
+        var new_x = curFrameImagesItemPoints.x[i]
+        var new_y = curFrameImagesItemPoints.y[i]
+        var paired_x = curFrameImagesItemPoints.x[indexIsOdd ? i - 1 : i + 1]
+        var paired_y = curFrameImagesItemPoints.y[indexIsOdd ? i - 1 : i + 1]
+
+        if new_x < 0 {
+            if paired_x > 0 {
+                x_ratio = paired_x / (paired_x - new_x)
+                new_x = 0
+                new_y = paired_y - ((paired_y - new_y) * x_ratio)
+            } else {
+                if new_x < paired_x {
+                    let tmp_x = paired_x
+                    paired_x = new_x
+                    new_x = tmp_x
+                    let tmp_y = paired_y
+                    paired_y = new_y
+                    new_y = tmp_y
+                }
+                x_ratio = paired_x / (paired_x - new_x)
+                new_x = 0
+                new_y = paired_y + ((new_y - paired_y) * x_ratio)
+
+            }
+        } else if new_x > Double(width) {
+            x_ratio = (Double(width) - paired_x) / (new_x - paired_x)
+            new_x = Double(width)
+            new_y = paired_y + ((new_y - paired_y) * x_ratio)
+        }
+        if new_y < 0 {
+            if paired_y > 0 {
+            y_ratio = paired_y / (paired_y - new_y)
+            new_y = 0
+            new_x = paired_x - ((paired_x - new_x) * y_ratio)
+            } else {
+                if new_y < paired_y {
+                    let tmp_x = paired_x
+                    paired_x = new_x
+                    new_x = tmp_x
+                    let tmp_y = paired_y
+                    paired_y = new_y
+                    new_y = tmp_y
+                }
+                y_ratio = paired_y / (paired_y - new_y)
+                new_y = 0
+                new_x = paired_x + ((new_x - paired_x) * y_ratio)
+            }
+        } else if new_y > Double(height) {
+            y_ratio = (Double(height) - paired_y) / (new_y - paired_y)
+            new_y = Double(height)
+            new_x = paired_x + ((new_x - paired_x) * y_ratio)
+        }
+
+        x_res.append(new_x)
+        y_res.append(new_y)
+    }
+    return (x_res, y_res)
+}
+
+func extract3DCocoSeg(axera_inst: AxeraFrame.FrameImages.FrameImagesItem, width: Int, height: Int) -> [[Double]] {
     var polygon_points_array = [[Double]]()
-    let xs = axera_inst.points.x
-    let ys = axera_inst.points.y
     // Axera 3D segmentation anno do polygon do not have hole anno for now
     // so only one curSeg created.
     var curSeg = [Double]()
@@ -48,18 +142,28 @@ func extract3DCocoSeg(axera_inst: AxeraFrame.FrameImages.FrameImagesItem) -> [[D
     //     curSeg.append(xs[i])
     //     curSeg.append(ys[i])
     // }
-    let leftTopX = axera_inst.position.x
-    let leftTopY = axera_inst.position.y
-    let xDim = axera_inst.dimension.x
-    let yDim = axera_inst.dimension.y
-    curSeg.append(leftTopX)
-    curSeg.append(leftTopY)
-    curSeg.append(leftTopX)
-    curSeg.append(leftTopY + yDim)
-    curSeg.append(leftTopX + xDim)
-    curSeg.append(leftTopY + yDim)
-    curSeg.append(leftTopX + xDim)
-    curSeg.append(leftTopY)
+
+    let scaledDownPoints = scaleDown(
+        curFrameImagesItemPoints: axera_inst.points,
+        width: width,
+        height: height
+    )
+
+    let x_points = scaledDownPoints.0
+    let y_points = scaledDownPoints.1
+    let min_x_points = x_points.min()!
+    let max_x_points = x_points.max()!
+    let min_y_points = y_points.min()!
+    let max_y_points = y_points.max()!
+    curSeg.append(min_x_points)
+    curSeg.append(min_y_points)
+    curSeg.append(max_x_points)
+    curSeg.append(min_y_points)
+    curSeg.append(max_x_points)
+    curSeg.append(max_y_points)
+    curSeg.append(min_x_points)
+    curSeg.append(max_y_points)
+
     polygon_points_array.append(curSeg)
     // issue related to cocoapi `https://github.com/cocodataset/cocoapi/issues/139`
     if polygon_points_array[0].count == 4 {
@@ -93,10 +197,9 @@ func calBboxFromCocoSeg(polygon_points_array: [[Double]]) -> [Double] {
     return [minX, minY, maxX - minX, maxY - minY]
 }
 
-
 func createDefaultCocoJson() -> CocoAnno {
     var coco_categories = [CocoCategory]()
-    let backgoundAnno = CocoCategory(id:0, name:"background", supercategory:"")
+    let backgoundAnno = CocoCategory(id: 0, name: "background", supercategory: "")
     coco_categories.append(backgoundAnno)
 
     let dateFormatter = DateFormatter()
@@ -169,11 +272,12 @@ func supercategory2category(supercategory: String, type: String, color: String, 
             "pl70",
             "pl80",
             "pr40",
-            "pr60"].contains(typeCN) {
+            "pr60"].contains(typeCN)
+        {
             res = "TFS_" + typeCN
-            } else if typeCN != "unknown" {
-                res = "TFS_other"
-            }
+        } else if typeCN != "unknown" {
+            res = "TFS_other"
+        }
     case "停止线":
         res = "stop_line"
     case "人行横道":
