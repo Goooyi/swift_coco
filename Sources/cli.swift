@@ -104,7 +104,11 @@ struct SwiftCOCO: ParsableCommand {
                         for frame in axera_img_anno.frames {
                             if scalingType == "3D" {
                                 for frameItem in frame.items! {
-                                    if frameItem.labelsObj!.visibility == "0% - 30%" {
+                                    let labelsObj = frameItem.labelsObj
+                                    if labelsObj == nil {
+                                        continue
+                                    }
+                                    if labelsObj!.visibility == "0% - 30%" {
                                         continue
                                     }
                                     // read yaml file
@@ -120,10 +124,97 @@ struct SwiftCOCO: ParsableCommand {
                                             frontCamIntrinsics = camera_config["intrinsics"]
                                         }
                                     }
-                                    let bbox = pytest(frameItem: frameItem,
-                                                    FrontCameraMatrix: FrontCameraMatrix,
-                                                    fov_w: 100,
-                                                    frontCamIntrinsics: frontCamIntrinsics)
+                                    let bbox2d_8p = pytest(frameItem: frameItem,
+                                                           FrontCameraMatrix: FrontCameraMatrix,
+                                                           fov_w: 100,
+                                                           frontCamIntrinsics: frontCamIntrinsics)
+
+                                    if bbox2d_8p.count == 0 {
+                                        continue
+                                    }
+                                    // create image entry if not exist
+                                    let file_path = imageURL + "/" + cur_json.deletingPathExtension().appendingPathExtension("jpg").lastPathComponent
+                                    if file_name2id[file_path] == nil {
+                                        file_name2id[file_path] = coco_json.images.count
+                                        let axera_img_anno_height = 1080
+                                        let axera_img_anno_width = 1920
+                                        let cocoImage = createImageEntry(
+                                            image_id: file_name2id[file_path]!,
+                                            file_name: file_path, // last two path component
+                                            height: axera_img_anno_height,
+                                            width: axera_img_anno_width
+                                        )
+                                        coco_json.images.append(cocoImage)
+                                    }
+                                    // count categories and supercategories
+                                    let separators = CharacterSet(charactersIn: "_. ")
+                                    let nameSeq = frameItem.category.components(separatedBy: separators)
+                                    let supercategory = nameSeq[0]
+                                    let category = nameSeq[1]
+                                    if counter.keys.contains(String(supercategory)) {
+                                        if counter[String(supercategory)]!.keys.contains(String(category)) {
+                                            counter[String(supercategory)]![String(category)]! += 1
+                                        } else {
+                                            counter[String(supercategory)]![String(category)] = 1
+                                        }
+                                    } else {
+                                        counter[String(supercategory)] = [String(category): 1]
+                                    }
+                                    // create category entry if not exist
+                                    var curCategoryId = coco_json.categories.first(where: { $0.name == category })?.id
+                                    if curCategoryId == nil {
+                                        if category2id_hashmap[category] != nil {
+                                            curCategoryId = category2id_hashmap[category]!.1
+                                        } else {
+                                            curCategoryId = coco_json.categories.count
+                                            let curCatehash = SHA256.hash(data: category.data(using: .utf8)!)
+                                            // save the hexdigit string format of curCatehash
+                                            let hexHash = curCatehash.compactMap { String(format: "%02x", $0) }.joined()
+                                            category2id_hashmap[category] = (hexHash, curCategoryId!)
+                                        }
+                                        coco_json.categories.append(CocoCategory(id: curCategoryId!, name: category, supercategory: supercategory))
+                                    }
+                                    // create coco instance
+                                    var cur_box_x_max = bbox2d_8p[0].x
+                                    var cur_box_y_max = bbox2d_8p[0].y
+                                    var cur_box_x_min = bbox2d_8p[0].x
+                                    var cur_box_y_min = bbox2d_8p[0].y
+                                    for i in 0 ..< 8 {
+                                        if bbox2d_8p[i].x < cur_box_x_min {
+                                            cur_box_x_min = bbox2d_8p[i].x
+                                        }
+                                        if bbox2d_8p[i].x > cur_box_x_max {
+                                            cur_box_x_max = bbox2d_8p[i].x
+                                        }
+                                        if bbox2d_8p[i].y < cur_box_y_min {
+                                            cur_box_y_min = bbox2d_8p[i].y
+                                        }
+                                        if bbox2d_8p[i].y > cur_box_y_max {
+                                            cur_box_y_max = bbox2d_8p[i].y
+                                        }
+                                    }
+                                    var coco_anno_seg = [[Double]]()
+                                    var curSeg = [Double]()
+                                    curSeg.append(cur_box_x_min)
+                                    curSeg.append(cur_box_y_min)
+                                    curSeg.append(cur_box_x_max)
+                                    curSeg.append(cur_box_y_max)
+                                    curSeg.append(cur_box_x_max)
+                                    curSeg.append(cur_box_y_max)
+                                    curSeg.append(cur_box_x_min)
+                                    curSeg.append(cur_box_y_max)
+                                    coco_anno_seg.append(curSeg)
+                                    let cur_box_area = (cur_box_x_max - cur_box_x_min) * (cur_box_y_max - cur_box_y_min)
+                                    let cocoInstanceAnnotation = CocoInstanceAnnotation(
+                                        id: coco_json.annotations.count,
+                                        image_id: file_name2id[file_path]!,
+                                        category_id: curCategoryId!,
+                                        bbox: [cur_box_x_min, cur_box_y_min, cur_box_x_max - cur_box_x_min, cur_box_y_max - cur_box_y_min],
+                                        segmentation: coco_anno_seg,
+                                        area: cur_box_area,
+                                        iscrowd: 0
+                                    )
+                                    coco_json.annotations.append(cocoInstanceAnnotation)
                                 }
                             } else {
                                 for img in frame.images! {

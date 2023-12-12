@@ -4,7 +4,7 @@ import PythonKit
 func pytest(frameItem: AxeraFrame.FrameItems,
             FrontCameraMatrix: PythonObject,
             fov_w: Int,
-            frontCamIntrinsics: PythonObject)
+            frontCamIntrinsics: PythonObject) -> [(x: Double, y: Double)]
 {
     let sys = Python.import("sys")
     // print("Python Path \(sys.path)")
@@ -107,7 +107,7 @@ func pytest(frameItem: AxeraFrame.FrameItems,
             corners[i].x = max(clipDepth, corners[i].x)
         }
     } else {
-        return
+        return [(x: Double, y: Double)]()
     }
     // Camera intrinsic parameters
     let fx = Double(frontCamIntrinsics["fx"])!
@@ -127,7 +127,8 @@ func pytest(frameItem: AxeraFrame.FrameItems,
         corners2D.append((x: x2D, y: y2D))
     }
 
-    print(corners2D)
+    // print(corners2D)
+    return corners2D
 
     // 'corners2D' now contains the 2D coordinates on the camera image plane
 }
