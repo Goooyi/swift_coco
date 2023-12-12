@@ -9,6 +9,10 @@ import PythonKit
 struct SwiftCOCO: ParsableCommand {
     @Option(help: "Specify the input type: `2D` Axera(Traffic light, etc) data or `3D` Axera data(Car, Lane, etc)")
     public var type: String
+    @Option(help: "If type=3D, this option is required, otherwise it will be ignored. Specify the scaling type when type=3D: `2D`  or `3D` ")
+    public var scalingType: String
+    @Option(help: "The paths to camera yaml file")
+    public var cameraYamlPath: String
     @Option(help: "The paths to input json files, split by space")
     public var axeraAnnoPath: [String]
     @Option(help: "The path to input image files")
@@ -25,19 +29,19 @@ struct SwiftCOCO: ParsableCommand {
         case "2D":
             convert2D(axeraAnnoPath: axeraAnnoPath, axeraImgPath: axeraImgPath)
         case "3D":
-            convert3D(axeraAnnoPath: axeraAnnoPath, axeraImgPath: axeraImgPath)
+            convert3D(axeraAnnoPath: axeraAnnoPath, axeraImgPath: axeraImgPath, scalingType: scalingType)
         default:
             print("Invalid type")
         }
     }
 
-    private func convert3D(axeraAnnoPath: [String], axeraImgPath: String) {
+    private func convert3D(axeraAnnoPath: [String], axeraImgPath _: String, scalingType: String) {
         print("Processing 3D annotations")
         var jsonsURLs = [URL]()
         for path in axeraAnnoPath {
             jsonsURLs.append(URL(fileURLWithPath: path))
         }
-        let imageURL = URL(fileURLWithPath: axeraImgPath)
+        // let imageURL = URL(fileURLWithPath: axeraImgPath)
         let output_cocoURL = URL(fileURLWithPath: outJsonPath)
         let parentDirectoryURL = output_cocoURL.deletingLastPathComponent()
 
@@ -98,91 +102,116 @@ struct SwiftCOCO: ParsableCommand {
                         // create a set to store different names
                         // acutally all axera_img_ann.frames has only one inside
                         for frame in axera_img_anno.frames {
-                            for img in frame.images! {
-                                if !img.image.contains("FRONT_rect") {
-                                    continue
-                                }
-                                // create image entry if not exist
-                                let file_path = imageURL + "/" + cur_json.deletingPathExtension().appendingPathExtension("jpg").lastPathComponent
-                                if file_name2id[file_path] == nil {
-                                    file_name2id[file_path] = coco_json.images.count
-                                    let axera_img_anno_height = img.height
-                                    let axera_img_anno_width = img.width
-                                    let cocoImage = createImageEntry(
-                                        image_id: file_name2id[file_path]!,
-                                        file_name: file_path, // last two path component
-                                        height: axera_img_anno_height,
-                                        width: axera_img_anno_width
-                                    )
-                                    coco_json.images.append(cocoImage)
-                                }
-
-                                for item in img.items {
-                                    // TODO: clean seperator when annotated
-                                    if !visibleFor3DImageItem(axera_inst: item, axera_items: frame.items!) {
+                            if scalingType == "3D" {
+                                for frameItem in frame.items! {
+                                    if frameItem.labelsObj!.visibility == "0% - 30%" {
                                         continue
                                     }
-                                    // count categories and supercategories
-                                    let separators = CharacterSet(charactersIn: "_. ")
-                                    let nameSeq = item.category.components(separatedBy: separators)
-                                    let supercategory = nameSeq[0]
-                                    let category = nameSeq[1]
-                                    if counter.keys.contains(String(supercategory)) {
-                                        if counter[String(supercategory)]!.keys.contains(String(category)) {
-                                            counter[String(supercategory)]![String(category)]! += 1
-                                        } else {
-                                            counter[String(supercategory)]![String(category)] = 1
+                                    // read yaml file
+                                    var FrontCameraMatrix = PythonObject([])
+                                    var frontCamIntrinsics = PythonObject([])
+                                    let yaml = Python.import("yaml")
+                                    let cameraYaml = try! String(contentsOf: URL(fileURLWithPath: cameraYamlPath))
+                                    let cameraYamlDict = try! yaml.safe_load(cameraYaml)
+                                    for camera in cameraYamlDict["camera"] {
+                                        let camera_config = camera["camera_config"]
+                                        if camera_config["topic"] == "/camera/XFV/FRONT/compressed_image" {
+                                            FrontCameraMatrix = camera_config["tovcs"]
+                                            frontCamIntrinsics = camera_config["intrinsics"]
                                         }
-                                    } else {
-                                        counter[String(supercategory)] = [String(category): 1]
+                                    }
+                                    let bbox = pytest(frameItem: frameItem,
+                                                    FrontCameraMatrix: FrontCameraMatrix,
+                                                    fov_w: 100,
+                                                    frontCamIntrinsics: frontCamIntrinsics)
+                                }
+                            } else {
+                                for img in frame.images! {
+                                    if !img.image.contains("FRONT_rect") {
+                                        continue
+                                    }
+                                    // create image entry if not exist
+                                    let file_path = imageURL + "/" + cur_json.deletingPathExtension().appendingPathExtension("jpg").lastPathComponent
+                                    if file_name2id[file_path] == nil {
+                                        file_name2id[file_path] = coco_json.images.count
+                                        let axera_img_anno_height = img.height
+                                        let axera_img_anno_width = img.width
+                                        let cocoImage = createImageEntry(
+                                            image_id: file_name2id[file_path]!,
+                                            file_name: file_path, // last two path component
+                                            height: axera_img_anno_height,
+                                            width: axera_img_anno_width
+                                        )
+                                        coco_json.images.append(cocoImage)
                                     }
 
-                                    // create category entry if not exist
-                                    var curCategoryId = coco_json.categories.first(where: { $0.name == category })?.id
-                                    if curCategoryId == nil {
-                                        if category2id_hashmap[category] != nil {
-                                            curCategoryId = category2id_hashmap[category]!.1
+                                    for item in img.items {
+                                        // TODO: clean seperator when annotated
+                                        if !visibleFor3DImageItem(axera_inst: item, axera_items: frame.items!) {
+                                            continue
+                                        }
+                                        // count categories and supercategories
+                                        let separators = CharacterSet(charactersIn: "_. ")
+                                        let nameSeq = item.category.components(separatedBy: separators)
+                                        let supercategory = nameSeq[0]
+                                        let category = nameSeq[1]
+                                        if counter.keys.contains(String(supercategory)) {
+                                            if counter[String(supercategory)]!.keys.contains(String(category)) {
+                                                counter[String(supercategory)]![String(category)]! += 1
+                                            } else {
+                                                counter[String(supercategory)]![String(category)] = 1
+                                            }
                                         } else {
-                                            curCategoryId = coco_json.categories.count
-                                            let curCatehash = SHA256.hash(data: category.data(using: .utf8)!)
-                                            // save the hexdigit string format of curCatehash
-                                            let hexHash = curCatehash.compactMap { String(format: "%02x", $0) }.joined()
-                                            category2id_hashmap[category] = (hexHash, curCategoryId!)
+                                            counter[String(supercategory)] = [String(category): 1]
                                         }
-                                        coco_json.categories.append(CocoCategory(id: curCategoryId!, name: category, supercategory: supercategory))
-                                    }
 
-                                    // create coco instance
-                                    let coco_anno_seg = extract3DCocoSeg(axera_inst: item, width: img.width, height: img.height)
-                                    var cur_box_x_min = coco_anno_seg[0][0]
-                                    var cur_box_y_min = coco_anno_seg[0][1]
-                                    var cur_box_x_max = coco_anno_seg[0][0]
-                                    var cur_box_y_max = coco_anno_seg[0][1]
-                                    for i in stride(from:2, to: coco_anno_seg[0].count, by:2) {
-                                        if coco_anno_seg[0][i] < cur_box_x_min {
-                                            cur_box_x_min = coco_anno_seg[0][i]
+                                        // create category entry if not exist
+                                        var curCategoryId = coco_json.categories.first(where: { $0.name == category })?.id
+                                        if curCategoryId == nil {
+                                            if category2id_hashmap[category] != nil {
+                                                curCategoryId = category2id_hashmap[category]!.1
+                                            } else {
+                                                curCategoryId = coco_json.categories.count
+                                                let curCatehash = SHA256.hash(data: category.data(using: .utf8)!)
+                                                // save the hexdigit string format of curCatehash
+                                                let hexHash = curCatehash.compactMap { String(format: "%02x", $0) }.joined()
+                                                category2id_hashmap[category] = (hexHash, curCategoryId!)
+                                            }
+                                            coco_json.categories.append(CocoCategory(id: curCategoryId!, name: category, supercategory: supercategory))
                                         }
-                                        if coco_anno_seg[0][i] > cur_box_x_max {
-                                            cur_box_x_max = coco_anno_seg[0][i]
+
+                                        // create coco instance
+                                        let coco_anno_seg = extract3DCocoSeg(axera_inst: item, width: img.width, height: img.height)
+                                        var cur_box_x_min = coco_anno_seg[0][0]
+                                        var cur_box_y_min = coco_anno_seg[0][1]
+                                        var cur_box_x_max = coco_anno_seg[0][0]
+                                        var cur_box_y_max = coco_anno_seg[0][1]
+                                        for i in stride(from: 2, to: coco_anno_seg[0].count, by: 2) {
+                                            if coco_anno_seg[0][i] < cur_box_x_min {
+                                                cur_box_x_min = coco_anno_seg[0][i]
+                                            }
+                                            if coco_anno_seg[0][i] > cur_box_x_max {
+                                                cur_box_x_max = coco_anno_seg[0][i]
+                                            }
+                                            if coco_anno_seg[0][i + 1] < cur_box_y_min {
+                                                cur_box_y_min = coco_anno_seg[0][i + 1]
+                                            }
+                                            if coco_anno_seg[0][i + 1] > cur_box_y_max {
+                                                cur_box_y_max = coco_anno_seg[0][i + 1]
+                                            }
                                         }
-                                        if coco_anno_seg[0][i+1] < cur_box_y_min {
-                                            cur_box_y_min = coco_anno_seg[0][i+1]
-                                        }
-                                        if coco_anno_seg[0][i+1] > cur_box_y_max {
-                                            cur_box_y_max = coco_anno_seg[0][i+1]
-                                        }
+                                        let cur_box_area = (cur_box_x_max - cur_box_x_min) * (cur_box_y_max - cur_box_y_min)
+                                        let cocoInstanceAnnotation = CocoInstanceAnnotation(
+                                            id: coco_json.annotations.count,
+                                            image_id: file_name2id[file_path]!,
+                                            category_id: curCategoryId!,
+                                            bbox: [cur_box_x_min, cur_box_y_min, cur_box_x_max - cur_box_x_min, cur_box_y_max - cur_box_y_min],
+                                            segmentation: coco_anno_seg,
+                                            area: cur_box_area,
+                                            iscrowd: 0
+                                        )
+                                        coco_json.annotations.append(cocoInstanceAnnotation)
                                     }
-                                    let cur_box_area = (cur_box_x_max - cur_box_x_min) * (cur_box_y_max - cur_box_y_min)
-                                    let cocoInstanceAnnotation = CocoInstanceAnnotation(
-                                        id: coco_json.annotations.count,
-                                        image_id: file_name2id[file_path]!,
-                                        category_id: curCategoryId!,
-                                        bbox: [cur_box_x_min, cur_box_y_min, cur_box_x_max - cur_box_x_min, cur_box_y_max - cur_box_y_min],
-                                        segmentation: coco_anno_seg,
-                                        area: cur_box_area,
-                                        iscrowd: 0
-                                    )
-                                    coco_json.annotations.append(cocoInstanceAnnotation)
                                 }
                             }
                         }
