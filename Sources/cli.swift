@@ -57,6 +57,21 @@ struct SwiftCOCO: ParsableCommand {
             print("Error creating parent directory for output: \(error)")
         }
 
+        var np = Python.import("numpy")
+        var tan = Python.import("math").tan
+        var pi = Python.import("math").pi
+        var yaml = Python.import("yaml")
+        var FrontCameraMatrix = PythonObject([])
+        var frontCamIntrinsics = PythonObject([])
+        let cameraYaml = try! String(contentsOf: URL(fileURLWithPath: cameraYamlPath))
+        let cameraYamlDict = try! yaml.safe_load(cameraYaml)
+        for camera in cameraYamlDict["camera"] {
+            let camera_config = camera["camera_config"]
+            if camera_config["topic"] == "/camera/XFV/FRONT/compressed_image" {
+                FrontCameraMatrix = camera_config["tovcs"]
+                frontCamIntrinsics = camera_config["intrinsics"]
+            }
+        }
         // load category2id_hashmap
         var category2id_hashmap: [String: (String, Int)] = [:]
         if let category2id_hashmapData = try? String(contentsOf: category2id_hashmapURL) {
@@ -76,7 +91,7 @@ struct SwiftCOCO: ParsableCommand {
             // TODO: better logic to assign json annotion to xfv/xpilot
             let imageURL = jsonsURL.lastPathComponent.contains("WIDE") ? "FRONT_WIDE_rect" : "FRONT_rect"
             print("Processing item \(jsonFileCount + 1) of total \(jsonsURLs.count) given json source")
-            let jsons: [URL]
+            var jsons: [URL]
             do {
                 jsons = try FileManager.default.contentsOfDirectory(at: jsonsURL, includingPropertiesForKeys: nil, options: .skipsSubdirectoryDescendants)
             } catch {
@@ -84,6 +99,8 @@ struct SwiftCOCO: ParsableCommand {
                 fatalError("Error loading data")
             }
 
+            // // take only the first 100
+            // jsons = Array(jsons[0..<1000])
             let total = jsons.count
             for (index, cur_json) in jsons.enumerated() {
                 let progress = Float(index + 1) / Float(total)
@@ -103,6 +120,7 @@ struct SwiftCOCO: ParsableCommand {
                         // acutally all axera_img_ann.frames has only one inside
                         for frame in axera_img_anno.frames {
                             if scalingType == "3D" {
+                                // read yaml file
                                 for frameItem in frame.items! {
                                     let labelsObj = frameItem.labelsObj
                                     if labelsObj == nil {
@@ -111,23 +129,14 @@ struct SwiftCOCO: ParsableCommand {
                                     if labelsObj!.visibility == "0% - 30%" {
                                         continue
                                     }
-                                    // read yaml file
-                                    var FrontCameraMatrix = PythonObject([])
-                                    var frontCamIntrinsics = PythonObject([])
-                                    let yaml = Python.import("yaml")
-                                    let cameraYaml = try! String(contentsOf: URL(fileURLWithPath: cameraYamlPath))
-                                    let cameraYamlDict = try! yaml.safe_load(cameraYaml)
-                                    for camera in cameraYamlDict["camera"] {
-                                        let camera_config = camera["camera_config"]
-                                        if camera_config["topic"] == "/camera/XFV/FRONT/compressed_image" {
-                                            FrontCameraMatrix = camera_config["tovcs"]
-                                            frontCamIntrinsics = camera_config["intrinsics"]
-                                        }
-                                    }
                                     let bbox2d_8p = pytest(frameItem: frameItem,
-                                                           FrontCameraMatrix: FrontCameraMatrix,
+                                                           FrontCameraMatrix: &FrontCameraMatrix,
                                                            fov_w: 100,
-                                                           frontCamIntrinsics: frontCamIntrinsics)
+                                                           frontCamIntrinsics: &frontCamIntrinsics,
+                                                           np: &np,
+                                                           tan: &tan,
+                                                           pi: &pi,
+                                                           yaml: &yaml)
 
                                     if bbox2d_8p.count == 0 {
                                         continue
@@ -198,7 +207,7 @@ struct SwiftCOCO: ParsableCommand {
                                     curSeg.append(cur_box_x_min)
                                     curSeg.append(cur_box_y_min)
                                     curSeg.append(cur_box_x_max)
-                                    curSeg.append(cur_box_y_max)
+                                    curSeg.append(cur_box_y_min)
                                     curSeg.append(cur_box_x_max)
                                     curSeg.append(cur_box_y_max)
                                     curSeg.append(cur_box_x_min)
