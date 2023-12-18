@@ -72,6 +72,21 @@ struct SwiftCOCO: ParsableCommand {
                 frontCamIntrinsics = camera_config["intrinsics"]
             }
         }
+        // TODO: duplicate info
+        let cameraConfig = CameraConfig(
+            fx: 991.086,
+            fy: 1008.54185756891,
+            cx: 997.695111737993,
+            cy: 587.643109070594,
+            width: 1920,
+            height: 1080,
+            tovcs: [
+                [0.01570203, -0.01740295, 0.99972525, 1.84905231],
+                [-0.99986632, 0.00428637, 0.01577886, 0.00239131],
+                [-0.00455979, -0.99983937, -0.01733332, 1.399816],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
         // load category2id_hashmap
         var category2id_hashmap: [String: (String, Int)] = [:]
         if let category2id_hashmapData = try? String(contentsOf: category2id_hashmapURL) {
@@ -99,8 +114,8 @@ struct SwiftCOCO: ParsableCommand {
                 fatalError("Error loading data")
             }
 
-            // // take only the first 100
-            // jsons = Array(jsons[0..<1000])
+            // take only the first 1000
+            // jsons = Array(jsons[0..<500])
             let total = jsons.count
             for (index, cur_json) in jsons.enumerated() {
                 let progress = Float(index + 1) / Float(total)
@@ -184,22 +199,22 @@ struct SwiftCOCO: ParsableCommand {
                                         coco_json.categories.append(CocoCategory(id: curCategoryId!, name: category, supercategory: supercategory))
                                     }
                                     // create coco instance
-                                    var cur_box_x_max = bbox2d_8p[0].x
-                                    var cur_box_y_max = bbox2d_8p[0].y
-                                    var cur_box_x_min = bbox2d_8p[0].x
-                                    var cur_box_y_min = bbox2d_8p[0].y
-                                    for i in 0 ..< 8 {
+                                    var cur_box_x_max = min(1920, bbox2d_8p[0].x)
+                                    var cur_box_y_max = min(1080, bbox2d_8p[0].y)
+                                    var cur_box_x_min = max(0, bbox2d_8p[0].x)
+                                    var cur_box_y_min = max(0, bbox2d_8p[0].y)
+                                    for i in 0 ..< bbox2d_8p.count {
                                         if bbox2d_8p[i].x < cur_box_x_min {
-                                            cur_box_x_min = bbox2d_8p[i].x
+                                            cur_box_x_min = max(0, bbox2d_8p[i].x)
                                         }
                                         if bbox2d_8p[i].x > cur_box_x_max {
-                                            cur_box_x_max = bbox2d_8p[i].x
+                                            cur_box_x_max = min(1920, bbox2d_8p[i].x)
                                         }
                                         if bbox2d_8p[i].y < cur_box_y_min {
-                                            cur_box_y_min = bbox2d_8p[i].y
+                                            cur_box_y_min = max(0, bbox2d_8p[i].y)
                                         }
                                         if bbox2d_8p[i].y > cur_box_y_max {
-                                            cur_box_y_max = bbox2d_8p[i].y
+                                            cur_box_y_max = min(1080, bbox2d_8p[i].y)
                                         }
                                     }
                                     var coco_anno_seg = [[Double]]()
@@ -372,12 +387,16 @@ struct SwiftCOCO: ParsableCommand {
     }
 
     private func convert2D(axeraAnnoPath: [String], axeraImgPath: String) {
+        var tmp_axeraAnnoPath = ["/data/dataset/aXcellent/manu-label/axera_manu_v1.0/ANNOTATION_ROADMARK/FRONT_rect",
+                                 "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/ANNOTATION_TRAFFIC/FRONT_rect/"]
+        var tmp_axeraImgPath = "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/IMAGE/FRONT_rect"
         print("Processing 2D annotations")
         var jsonsURLs = [URL]()
-        for path in axeraAnnoPath {
+        // for path in axeraAnnoPath {
+        for path in tmp_axeraAnnoPath {
             jsonsURLs.append(URL(fileURLWithPath: path))
         }
-        let imageURL = URL(fileURLWithPath: axeraImgPath)
+        let imageURL = URL(fileURLWithPath: tmp_axeraImgPath)
         let output_cocoURL = URL(fileURLWithPath: outJsonPath)
         let parentDirectoryURL = output_cocoURL.deletingLastPathComponent()
 

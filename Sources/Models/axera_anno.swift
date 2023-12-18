@@ -1,3 +1,27 @@
+struct Vector3 {
+   var x: Double, y: Double, z: Double
+}
+
+struct Frustum {
+    var vertices = [Vector3]()
+}
+
+struct Plane {
+    var normal: [Double] // Normal vector of the plane
+    var distance: Double // Distance of the plane from the origin along its normal
+}
+
+// Define a struct to represent the camera configuration
+struct CameraConfig {
+    let fx: Double
+    let fy: Double
+    let cx: Double
+    let cy: Double
+    let width: Double
+    let height: Double
+    let tovcs: [[Double]]
+}
+
 struct AxeraFrameFrame: Codable {
     var imageUrl: String
     var frameIndex: Int?

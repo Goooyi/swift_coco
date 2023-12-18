@@ -1,1 +1,4 @@
-{}
+{
+    "lldb.library": "/home/linuxbrew/.linuxbrew/Cellar/swift/5.8.1_1/libexec/lib/liblldb.so",
+    "lldb.launch.expressions": "native"
+}
