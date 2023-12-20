@@ -35,13 +35,13 @@ struct SwiftCOCO: ParsableCommand {
         }
     }
 
-    private func convert3D(axeraAnnoPath: [String], axeraImgPath _: String, scalingType: String) {
+    private func convert3D(axeraAnnoPath: [String], axeraImgPath: String, scalingType: String) {
         print("Processing 3D annotations")
         var jsonsURLs = [URL]()
         for path in axeraAnnoPath {
             jsonsURLs.append(URL(fileURLWithPath: path))
         }
-        // let imageURL = URL(fileURLWithPath: axeraImgPath)
+        let imageURL = URL(fileURLWithPath: axeraImgPath)
         let output_cocoURL = URL(fileURLWithPath: outJsonPath)
         let parentDirectoryURL = output_cocoURL.deletingLastPathComponent()
 
@@ -324,6 +324,170 @@ struct SwiftCOCO: ParsableCommand {
             }
         }
         print("")
+
+        // tmp implement for rm tfl ---------------------------------
+        let tmp_axeraAnnoPath = ["/data/dataset/aXcellent/manu-label/axera_manu_v1.0/ANNOTATION_ROADMARK/FRONT_rect",
+                                 "/data/dataset/aXcellent/manu-label/axera_manu_v1.0/ANNOTATION_TRAFFIC/FRONT_rect/"]
+        jsonsURLs = [URL]()
+        for path in tmp_axeraAnnoPath {
+            jsonsURLs.append(URL(fileURLWithPath: path))
+        }
+        var roadArrowtype: Set<String> = []
+        var trafficLighttype: Set<String> = []
+        var trafficLightColor: Set<String> = []
+        var trafficSigntype: Set<String> = []
+        var supercategoryCounter = [String: Int]()
+
+        print("Processing items...")
+        for (jsonFileCount, jsonsURL) in jsonsURLs.enumerated() {
+            // choose imgageURL by check if `jsonsURL` have `WIDE` in his path string
+            // TODO: better logic to assign json annotion to xfv/xpilot
+            let imageURL = jsonsURL.lastPathComponent.contains("WIDE") ? "FRONT_WIDE_rect" : "FRONT_rect"
+            print("Processing item \(jsonFileCount + 1) of total \(jsonsURLs.count) given json source")
+            let jsons: [URL]
+            do {
+                jsons = try FileManager.default.contentsOfDirectory(at: jsonsURL, includingPropertiesForKeys: nil, options: .skipsSubdirectoryDescendants)
+            } catch {
+                print("\(error) when loading \(jsonsURL)")
+                fatalError("Error loading data")
+            }
+
+            let total = jsons.count
+            for (index, cur_json) in jsons.enumerated() {
+                let progress = Float(index + 1) / Float(total)
+                let formattedProgress = String(format: "%.2f", progress * 100)
+                print("\rProgress: \(formattedProgress)%", terminator: "")
+
+                let axera_json = try! String(contentsOf: cur_json)
+                if let axeraData = axera_json.data(using: .utf8) {
+                    do {
+                        // skip if no anno for this image
+                        let axera_img_anno = try decoder.decode(AxeraImageAnno.self, from: axeraData)
+                        if let axInstances = axera_img_anno.instances, axInstances.count == 0 {
+                            continue
+                        }
+
+                        // create a set to store different names
+                        for inst in axera_img_anno.instances! {
+                            let supercategoryName = inst.categoryName
+                            // TODO: intergreate this swich syntax to logging system
+                            switch supercategoryName {
+                            case "路面箭头":
+                                if let RAtype = inst.attributes?["type"], RAtype != "unknown" {
+                                    roadArrowtype.insert(RAtype)
+                                }
+                            case "交通灯":
+                                if let TFLtype = inst.attributes?["type"], TFLtype != "unknown" {
+                                    trafficLighttype.insert(TFLtype)
+                                    trafficLightColor.insert(inst.attributes?["color"] ?? "unknown")
+                                }
+                            case "交通标志":
+                                if let TFStype = inst.attributes?["类型"], TFStype != "unknown" {
+                                    trafficSigntype.insert(TFStype)
+                                }
+                            default:
+                                break
+                            }
+
+                            // if ["交通灯"].contains(supercategoryName),
+                            //    inst.children[0].cameras[0].frames[0].attributes?["color"] != nil
+                            // {
+                            //     let tmp = inst.children[0].cameras[0].frames[0].attributes?["color"] ?? "unknown"
+                            //     if tmp != "unknown" {
+                            //         Marker = true
+                            //     }
+
+                            // }
+                            // if ["交通标志"].contains(supercategoryName),
+                            //    inst.children[0].cameras[0].frames[0].attributes?["type"] != nil
+                            // {
+                            //     let tmp = inst.children[0].cameras[0].frames[0].attributes?["type"] ?? "unknown"
+                            //     if tmp != "unknown" {
+                            //         Marker2 = true
+                            //     }
+                            // }
+
+                            // skip if a supercategory that should have sub attributes, but attributes is nil
+                            if ["交通灯", "路面箭头", "交通标志"].contains(supercategoryName), inst.attributes == nil {
+                                continue
+                            }
+
+                            let categoryName = supercategory2category(supercategory: supercategoryName, type: inst.attributes?["type"] ?? "unknown", color: inst.attributes?["color"] ?? "unknown", typeCN: inst.attributes?["类型"] ?? "unknown")
+                            if categoryName == "unknown" {
+                                continue
+                            } else {
+                                counter[supercategoryName] = counter[supercategoryName] ?? [:]
+                                counter[supercategoryName]![categoryName] = (counter[supercategoryName]![categoryName] ?? 0) + 1
+                            }
+                            if let count = supercategoryCounter[supercategoryName] {
+                                supercategoryCounter[supercategoryName] = count + 1
+                            } else {
+                                supercategoryCounter[supercategoryName] = 1
+                            }
+
+                            // create category entry if not exist
+                            var curCategoryId = coco_json.categories.first(where: { $0.name == categoryName })?.id
+                            if curCategoryId == nil {
+                                if category2id_hashmap[categoryName] != nil {
+                                    curCategoryId = category2id_hashmap[categoryName]!.1
+                                } else {
+                                    curCategoryId = coco_json.categories.count
+                                    let curCatehash = SHA256.hash(data: categoryName.data(using: .utf8)!)
+                                    // save the hexdigit string format of curCatehash
+                                    let hexHash = curCatehash.compactMap { String(format: "%02x", $0) }.joined()
+                                    category2id_hashmap[categoryName] = (hexHash, curCategoryId!)
+                                }
+                                coco_json.categories.append(CocoCategory(id: curCategoryId!, name: categoryName, supercategory: supercategoryName))
+                            }
+
+                            // create image entry if not exist
+                            let file_path = imageURL + "/" + cur_json.deletingPathExtension().appendingPathExtension("jpg").lastPathComponent
+                            if file_name2id[file_path] == nil {
+                                file_name2id[file_path] = coco_json.images.count
+                                var axera_img_anno_height: Int
+                                var axera_img_anno_width: Int
+                                if let axera_img_anno_frames = axera_img_anno.frames[0].frames {
+                                    axera_img_anno_height = axera_img_anno_frames[0].imageHeight
+                                    axera_img_anno_width = axera_img_anno_frames[0].imageWidth
+                                } else {
+                                    fatalError("Failed to find filed `frames[0].frames[0]` in axerao annotion, which is required for type=2D")
+                                }
+                                let cocoImage = createImageEntry(
+                                    image_id: file_name2id[file_path]!,
+                                    file_name: file_path, // last two path component
+                                    height: axera_img_anno_height,
+                                    width: axera_img_anno_width
+                                )
+                                coco_json.images.append(cocoImage)
+                            }
+
+                            let coco_anno_seg = extractCocoSeg(axera_inst: inst)
+                            let coco_anno_bbox = calBboxFromCocoSeg(polygon_points_array: coco_anno_seg)
+                            let cur_box_area = coco_anno_bbox[2] * coco_anno_bbox[3]
+
+                            let cocoInstanceAnnotation = CocoInstanceAnnotation(
+                                id: coco_json.annotations.count,
+                                image_id: file_name2id[file_path]!,
+                                category_id: curCategoryId!,
+                                bbox: coco_anno_bbox,
+                                segmentation: coco_anno_seg,
+                                area: cur_box_area,
+                                iscrowd: 0
+                            )
+                            coco_json.annotations.append(cocoInstanceAnnotation)
+                        }
+
+                    } catch {
+                        print("Error when decode \(cur_json)")
+                        print("\(error)")
+                        print("Error: \(error.localizedDescription)")
+                    }
+                }
+            }
+            print("")
+            print("implement end----------")
+        }
+
         for supercategory in counter {
             print(supercategory.key)
             for category in supercategory.value {
