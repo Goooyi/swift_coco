@@ -36,6 +36,7 @@ struct SwiftCOCO: ParsableCommand {
     }
 
     private func convert3D(axeraAnnoPath: [String], axeraImgPath: String, scalingType: String) {
+        let hwRatioThreshold = 4.0
         print("Processing 3D annotations")
         var jsonsURLs = [URL]()
         for path in axeraAnnoPath {
@@ -141,6 +142,28 @@ struct SwiftCOCO: ParsableCommand {
                                     if bbox2d_8p.count == 0 {
                                         continue
                                     }
+                                    var cur_box_x_max = min(1920, bbox2d_8p[0].x)
+                                    var cur_box_y_max = min(1080, bbox2d_8p[0].y)
+                                    var cur_box_x_min = max(0, bbox2d_8p[0].x)
+                                    var cur_box_y_min = max(0, bbox2d_8p[0].y)
+                                    for i in 0 ..< bbox2d_8p.count {
+                                        if bbox2d_8p[i].x < cur_box_x_min {
+                                            cur_box_x_min = max(0, bbox2d_8p[i].x)
+                                        }
+                                        if bbox2d_8p[i].x > cur_box_x_max {
+                                            cur_box_x_max = min(1920, bbox2d_8p[i].x)
+                                        }
+                                        if bbox2d_8p[i].y < cur_box_y_min {
+                                            cur_box_y_min = max(0, bbox2d_8p[i].y)
+                                        }
+                                        if bbox2d_8p[i].y > cur_box_y_max {
+                                            cur_box_y_max = min(1080, bbox2d_8p[i].y)
+                                        }
+                                    }
+                                    let hwRatio = (Double(cur_box_y_max - cur_box_y_min) / Double(cur_box_x_max - cur_box_x_min))
+                                    if hwRatio > hwRatioThreshold {
+                                        continue
+                                    }
                                     // create image entry if not exist
                                     let file_path = imageURL + "/" + cur_json.deletingPathExtension().appendingPathExtension("jpg").lastPathComponent
                                     if file_name2id[file_path] == nil {
@@ -184,24 +207,6 @@ struct SwiftCOCO: ParsableCommand {
                                         coco_json.categories.append(CocoCategory(id: curCategoryId!, name: category, supercategory: supercategory))
                                     }
                                     // create coco instance
-                                    var cur_box_x_max = min(1920, bbox2d_8p[0].x)
-                                    var cur_box_y_max = min(1080, bbox2d_8p[0].y)
-                                    var cur_box_x_min = max(0, bbox2d_8p[0].x)
-                                    var cur_box_y_min = max(0, bbox2d_8p[0].y)
-                                    for i in 0 ..< bbox2d_8p.count {
-                                        if bbox2d_8p[i].x < cur_box_x_min {
-                                            cur_box_x_min = max(0, bbox2d_8p[i].x)
-                                        }
-                                        if bbox2d_8p[i].x > cur_box_x_max {
-                                            cur_box_x_max = min(1920, bbox2d_8p[i].x)
-                                        }
-                                        if bbox2d_8p[i].y < cur_box_y_min {
-                                            cur_box_y_min = max(0, bbox2d_8p[i].y)
-                                        }
-                                        if bbox2d_8p[i].y > cur_box_y_max {
-                                            cur_box_y_max = min(1080, bbox2d_8p[i].y)
-                                        }
-                                    }
                                     var coco_anno_seg = [[Double]]()
                                     var curSeg = [Double]()
                                     curSeg.append(cur_box_x_min)
@@ -368,7 +373,11 @@ struct SwiftCOCO: ParsableCommand {
                         }
 
                         // create a set to store different names
-                        for inst in axera_img_anno.instances! {
+                        var blackBoxes = [AxeraInstance]()
+                        for idx in 0 ..< axera_img_anno.instances!.count {
+                            var inst = axera_img_anno.instances![idx]
+
+                            // for inst in axera_img_anno.instances! {
                             let supercategoryName = inst.categoryName
                             // TODO: intergreate this swich syntax to logging system
                             switch supercategoryName {
@@ -414,6 +423,9 @@ struct SwiftCOCO: ParsableCommand {
 
                             let categoryName = supercategory2category(supercategory: supercategoryName, type: inst.attributes?["type"] ?? "unknown", color: inst.attributes?["color"] ?? "unknown", typeCN: inst.attributes?["类型"] ?? "unknown")
                             if categoryName == "unknown" {
+                                continue
+                            } else if categoryName == "TFL_black" {
+                                blackBoxes.append(inst)
                                 continue
                             } else {
                                 counter[supercategoryName] = counter[supercategoryName] ?? [:]
@@ -461,6 +473,15 @@ struct SwiftCOCO: ParsableCommand {
                                 coco_json.images.append(cocoImage)
                             }
 
+                            if categoryName.starts(with: "TFL") {
+                                for blackBox in blackBoxes {
+                                    let intersected = checkBox(insA: inst, insB: blackBox)
+                                    if intersected {
+                                        inst.children[0].cameras[0].frames[0].shape = blackBox.children[0].cameras[0].frames[0].shape
+                                        break
+                                    }
+                                }
+                            }
                             let coco_anno_seg = extractCocoSeg(axera_inst: inst)
                             let coco_anno_bbox = calBboxFromCocoSeg(polygon_points_array: coco_anno_seg)
                             let cur_box_area = coco_anno_bbox[2] * coco_anno_bbox[3]
@@ -605,7 +626,10 @@ struct SwiftCOCO: ParsableCommand {
                         }
 
                         // create a set to store different names
-                        for inst in axera_img_anno.instances! {
+                        var blackBoxes = [AxeraInstance]()
+                        for idx in 0 ..< axera_img_anno.instances!.count {
+                            var inst = axera_img_anno.instances![idx]
+                            // for inst in axera_img_anno.instances! {
                             let supercategoryName = inst.categoryName
                             // TODO: intergreate this swich syntax to logging system
                             switch supercategoryName {
@@ -651,6 +675,9 @@ struct SwiftCOCO: ParsableCommand {
 
                             let categoryName = supercategory2category(supercategory: supercategoryName, type: inst.attributes?["type"] ?? "unknown", color: inst.attributes?["color"] ?? "unknown", typeCN: inst.attributes?["类型"] ?? "unknown")
                             if categoryName == "unknown" {
+                                continue
+                            } else if categoryName == "TFL_black" {
+                                blackBoxes.append(inst)
                                 continue
                             } else {
                                 counter[supercategoryName] = counter[supercategoryName] ?? [:]
@@ -698,6 +725,15 @@ struct SwiftCOCO: ParsableCommand {
                                 coco_json.images.append(cocoImage)
                             }
 
+                            if categoryName.starts(with: "TFL") {
+                                for blackBox in blackBoxes {
+                                    let intersected = checkBox(insA: inst, insB: blackBox)
+                                    if intersected {
+                                        inst.children[0].cameras[0].frames[0].shape = blackBox.children[0].cameras[0].frames[0].shape
+                                        break
+                                    }
+                                }
+                            }
                             let coco_anno_seg = extractCocoSeg(axera_inst: inst)
                             let coco_anno_bbox = calBboxFromCocoSeg(polygon_points_array: coco_anno_seg)
                             let cur_box_area = coco_anno_bbox[2] * coco_anno_bbox[3]

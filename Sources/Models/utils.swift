@@ -1,5 +1,25 @@
 import Foundation
 
+// function to check if box A inside box B
+func checkBox(insA: AxeraInstance, insB: AxeraInstance) -> Bool {
+    // calculate intersection
+    switch insA.children[0].cameras[0].frames[0].shape {
+    case let .rectangle(rectA):
+        switch insB.children[0].cameras[0].frames[0].shape {
+        case let .rectangle(rectB):
+        // check if boxA inside boxB
+            if rectA.x >= rectB.x && rectA.y >= rectB.y && rectA.x + rectA.width <= rectB.x + rectB.width && rectA.y + rectA.height <= rectB.y + rectB.height {
+                return true
+            }
+            return false
+        default:
+            return false
+        }
+    default:
+        return false
+    }
+}
+
 func extractCocoSeg(axera_inst: AxeraInstance) -> [[Double]] {
     var polygon_points_array = [[Double]]()
     for child in axera_inst.children {
@@ -252,7 +272,7 @@ func supercategory2category(supercategory: String, type: String, color: String, 
         }
     case "路面箭头":
         if type != "unknown" {
-            res = "RoadArrow_" + type
+            res = "RA_" + type
         }
 
     case "交通标志":
