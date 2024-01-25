@@ -160,8 +160,12 @@ struct SwiftCOCO: ParsableCommand {
                                             cur_box_y_max = min(1080, bbox2d_8p[i].y)
                                         }
                                     }
+                                    let separators = CharacterSet(charactersIn: "_. ")
+                                    let nameSeq = frameItem.category.components(separatedBy: separators)
+                                    let supercategory = nameSeq[0]
+                                    let category = nameSeq[1]
                                     let hwRatio = (Double(cur_box_y_max - cur_box_y_min) / Double(cur_box_x_max - cur_box_x_min))
-                                    if hwRatio > hwRatioThreshold {
+                                    if supercategory == "vehicle" && hwRatio > hwRatioThreshold {
                                         continue
                                     }
                                     // create image entry if not exist
@@ -179,10 +183,6 @@ struct SwiftCOCO: ParsableCommand {
                                         coco_json.images.append(cocoImage)
                                     }
                                     // count categories and supercategories
-                                    let separators = CharacterSet(charactersIn: "_. ")
-                                    let nameSeq = frameItem.category.components(separatedBy: separators)
-                                    let supercategory = nameSeq[0]
-                                    let category = nameSeq[1]
                                     if counter.keys.contains(String(supercategory)) {
                                         if counter[String(supercategory)]!.keys.contains(String(category)) {
                                             counter[String(supercategory)]![String(category)]! += 1
@@ -628,6 +628,17 @@ struct SwiftCOCO: ParsableCommand {
                         // create a set to store different names
                         var blackBoxes = [AxeraInstance]()
                         for idx in 0 ..< axera_img_anno.instances!.count {
+                            let inst = axera_img_anno.instances![idx]
+                            // for inst in axera_img_anno.instances! {
+                            let supercategoryName = inst.categoryName
+                            let categoryName = supercategory2category(supercategory: supercategoryName, type: inst.attributes?["type"] ?? "unknown", color: inst.attributes?["color"] ?? "unknown", typeCN: inst.attributes?["类型"] ?? "unknown")
+                            if categoryName == "TFL_black" {
+                                blackBoxes.append(inst)
+                                continue
+                            }
+                        }
+
+                        for idx in 0 ..< axera_img_anno.instances!.count {
                             var inst = axera_img_anno.instances![idx]
                             // for inst in axera_img_anno.instances! {
                             let supercategoryName = inst.categoryName
@@ -677,7 +688,6 @@ struct SwiftCOCO: ParsableCommand {
                             if categoryName == "unknown" {
                                 continue
                             } else if categoryName == "TFL_black" {
-                                blackBoxes.append(inst)
                                 continue
                             } else {
                                 counter[supercategoryName] = counter[supercategoryName] ?? [:]
