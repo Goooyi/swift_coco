@@ -15,13 +15,6 @@ Example
 swift run swift_coco --type 2D --axera-anno-path axera_anno/root1/ --axera-anno-path axera_anno/root2/ --axera-img-path /example/axera_img/root --out-json-path out.json
 ```
 
-## TODO
-
-- [ ] Image `id` filed is mapped to it's index on the `images` fileds, so mergeing with other source annotated `.json` file may cause conflict
-- [x] `file_name` in the image name is named as absolute path since images can locate at different directories.
-- [ ] split train/val/test :
-- [ ] refine cate2id_hashmap
-
 ## Notice
 
 1. coco format set category id=0 as `background` class. When training with [detectron2](https://github.com/facebookresearch/detectron2) framework, the totoal class param in your config should be set to total_class_num + 1(background class)
