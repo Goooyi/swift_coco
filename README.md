@@ -113,3 +113,490 @@ TFL_red	ccbf596a4032cc173bd6bd58e84ece0021033216f0697216f90ffbb4a954a203	28
 TFL_green	22b22910bc2dd34d0d9791e968fb63634bd13cccc3bf2c54b5510f87e1b97697	29
 TFL_yellow	9abd69285c634186f124603ef566593a3d9bd6a52b29ed8e4102b0102ec43880	30
 ```
+
+## Axera stage2 anno
+
+```json
+{
+    "info": {
+        "version": "1.0",
+        "description": "Exported by --",
+        "contributor": "appen",
+        "date_created": "2024-03-17 09:48:27"
+    },
+    "licenses": {
+        "name": "AXERA"
+    },
+    "categories": {
+        "3d_bbox": [
+            "obstacle"
+        ],
+        "rect": [
+            "traffic_sign",
+            "traffic_light",
+            "road_arrow"
+        ],
+        "line": [
+            "lane",
+            "road_boundary",
+            "stop_line",
+            "cross_walk",
+            "no_parking_area"
+        ],
+        "point": [
+            "intersection"
+        ]
+    },
+    "images": {
+        "frame_name": "carid_1694143939.700131893",  #车辆id_frame名称
+        "lidar_calibration": [],
+        "cam_info": [
+            {
+                "frame_id": "FRONT",
+                "width": 1920,
+                "height": 1080,
+                "calibration": []
+            },
+            {
+                "frame_id": "FRONT_WIDE",
+                "width": 3840,
+                "height": 2160,
+                "calibration": []
+            },
+            {
+                "frame_id": "FISHEYE_FRONT",
+                "width": 1920,
+                "height": 1536,
+                "calibration": []
+            },
+            {
+                "frame_id": "FISHEYE_BACK",
+                "width": 1920,
+                "height": 1536,
+                "calibration": []
+            },
+            {
+                "frame_id": "FISHEYE_LEFT",
+                "width": 1920,
+                "height": 1536,
+                "calibration": []
+            },
+            {
+                "frame_id": "FISHEYE_RIGHT",
+                "width": 1920,
+                "height": 1536,
+                "calibration": []
+            },
+            {
+                "frame_id": "BACK",
+                "width": 1920,
+                "height": 1080,
+                "calibration": []
+            }
+        ]
+    },
+    "annotations": {
+        "obstacle": [
+            {
+                "id": 0,
+                "category": "vehicle.car",
+                "activity": "vehicle.moving",
+                "visibility": "50% - 100%", #五个挡位：0， 0-30，30-50，50-100，100
+                "pointCount": 231,
+                "truncated": [],
+                "position": { #3d box的中心点
+                    "x": -12.850573251060737,
+                    "y": 11.420862082071725,
+                    "z": 0.7020549622294561
+                },
+                "dimension": {
+                    "length": 4.469727993011474, # 长宽高
+                    "width": 1.9089231491088876,
+                    "height": 1.5610325266333185
+                },
+                "quaternion": {
+                    "qx": -0.0011199000504199068, #四元数
+                    "qy": 0.0011351155241995107,
+                    "qz": 0.9998958063521571,
+                    "qw": -0.014346908238134278
+                },
+				"taillight": { #取值范围 occlusion: true/false, status:true/false/unknown
+					"left": {
+						"occlusion": "true",
+						"status": "true"
+					},
+					"right": {
+						"occlusion": "true",
+						"status": "true"
+					},
+					"brake": {
+						"occlusion": "true",
+						"status": "true"
+					}
+
+				},
+				"wheel": {
+					"left_front": {
+						"occlusion": "true",  #驱逐范围：true/false/unknown
+                        "bbox": [
+                            {
+                                "x": 1174.839192,  #左上角
+                                "y": 526.069514
+                            },
+                            {
+                                "x": 1194.839192,  #右下角
+                                "y": 535.708251
+                            }
+                        ]
+					},
+					"left_middle": {
+						"occlusion": "true",
+                        "bbox": [
+                            {
+                                "x": 1174.839192, #左上角
+                                "y": 526.069514
+                            },
+                            {
+                                "x": 1194.839192, #右下角
+                                "y": 535.708251
+                            }
+                        ]
+					},
+					"left_back": {
+						"occlusion": "true",
+                        "bbox": [
+                            {
+                                "x": 1174.839192, #左上角
+                                "y": 526.069514
+                            },
+                            {
+                                "x": 1194.839192, #右下角
+                                "y": 535.708251
+                            }
+                        ]
+					},
+					"right_front": {
+						"occlusion": "true",
+                        "bbox": [
+                            {
+                                "x": 1174.839192, #左上角
+                                "y": 526.069514
+                            },
+                            {
+                                "x": 1194.839192, #右下角
+                                "y": 535.708251
+                            }
+                        ]
+					},
+					"right_middle": {
+						"occlusion": "true",
+                        "bbox": [
+                            {
+                                "x": 1174.839192, #左上角
+                                "y": 526.069514
+                            },
+                            {
+                                "x": 1194.839192, #右下角
+                                "y": 535.708251
+                            }
+                        ]
+					},
+					"right_back": {
+						"occlusion": "true",
+                        "bbox": [
+                            {
+                                "x": 1174.839192, #左上角
+                                "y": 526.069514
+                            },
+                            {
+                                "x": 1194.839192, #右下角
+                                "y": 535.708251
+                            }
+                        ]
+					}
+				},
+				"wheel_point": { #轮胎与地面的接触点，不计中间车轮
+					"left_front": { #左前车轮
+						"occlusion": "true",
+						"point": {
+							"x": 892.751734,
+							"y": 453.177844
+                 		}
+					},
+					"left_back": { #左后车轮
+						"occlusion": "true",
+						"point": {
+							"x": 892.751734,
+							"y": 453.177844
+                 		}
+					},
+					"right_front": { #右前车轮
+						"occlusion": "true",
+						"point": {
+							"x": 892.751734,
+							"y": 453.177844
+                 		}
+					},
+					"right_back": { #右后车轮
+						"occlusion": "true",
+						"point": {
+							"x": 892.751734,
+							"y": 453.177844
+                 		}
+					},
+					"front": { #TODO :三轮车、二辆车的轮接点
+						"occlusion": "true",
+						"point": {
+							"x": 892.751734,
+							"y": 453.177844
+                 		}
+					},
+					"back": { #TODO : 三轮车、二辆车的轮接点
+						"occlusion": "true",
+						"point": {
+							"x": 892.751734,
+							"y": 453.177844
+                 		}
+					}
+				}
+            }
+        ],
+        "traffic_sign": [
+            {
+                "id": 0, #字符串，或者有区分度就行
+                "cam_name": "FRONT", #2D的cam_name取值范围都只有FRONT和FRONT_WIDE
+                "category": "p40", #Axera规定的交通标志类型(见附录) + unknow
+                "occlusion": 0,  #0或1
+                "truncated": 0,  #0或1
+                "bbox": [
+                    {
+                        "x": 1174.839192,
+                        "y": 526.069514
+                    },
+                    {
+                        "x": 1174.839192,
+                        "y": 535.708251
+                    }
+                ]
+            }
+        ],
+        "traffic_light": [
+            {
+                "id": 0, #如果是master-slave关系则有同样的id, 字符串，或者有区分度就行
+                "master_slave": 1, # 0是master, 1是slave
+                "cam_name": "FRONT", #2D的cam_name取值范围都只有FRONT和FRONT_WIDE
+                "category": "light",  #Axera规定的交通类型 + unknow
+                "occlusion": 0,
+                "truncated": 0,
+                "color": "green",  #类型red, yellow, green, black + unknow
+                "direction": 0, #整型，0:面型行驶方向或者1：面向非行驶方向
+                "bbox": [  #左上角，右下角
+                    {
+                        "x": 1174.839192,
+                        "y": 526.069514
+                    },
+                    {
+                        "x": 1174.839192,
+                        "y": 535.708251
+                    }
+                ]
+            }
+        ],
+        "road_arrow": [
+            {
+                "id": 0,
+                "cam_name": "FRONT",
+                "category": "left", #Axera规定的地面箭头类型, 见附录
+                "occlusion": 0,
+                "truncated": 0,
+                "bbox": [ #左上角，右下角
+                    {
+                        "x": 1174.839192,
+                        "y": 526.069514
+                    },
+                    {
+                        "x": 1174.839192,
+                        "y": 535.708251
+                    }
+                ]
+            }
+        ],
+        "lane": [
+            {
+                "cam_name": "FRONT",
+                "category": "solid", #Axera规定的车道线类型，见附录
+                "color": "white", #取值范围：yellow, white，blue, unknown
+				"lane_id": -1, #双线可以有相同的lane_id, 单线必须不同的lane_id
+                "id": 3, #整形,字符串，或者有区分度就行
+                "points": [ #不闭合线段
+                    {
+                        "x": 892.751734,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 0 #取值范围[0, 1, 2, 3, 4]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3, 4]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3, 4]
+                    },
+                    {
+                        "x": 892.751734,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3, 4]
+                    }
+                ]
+            }
+        ],
+        "road_boundary": [  #不闭合线段
+            {
+                "cam_name": "FRONT",
+                "id": -1,  #整形,字符串，或者有区分度就行
+				"texture": "grassland", #取值范围:见附录3
+                "points": [
+                    {
+                        "x": 892.751734,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 0 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 892.751734,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    }
+                ]
+            }
+        ],
+        "stop_line": [
+            {
+                "cam_name": "FRONT",
+                "id": 2,
+                "points": [
+                    {
+                        "x": 892.751734,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 0 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 892.751734,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    }
+                ]
+            }
+        ],
+        "cross_walk": [ #闭合多边形
+            {
+                "cam_name": "FRONT",
+                "id": 1,
+                "points": [
+                    {
+                        "x": 892.751734,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 0 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 892.751734,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    }
+                ]
+            }
+        ],
+        "no_parking_area": [ #闭合多边形
+            {
+                "cam_name": "FRONT",
+                "id": 1,
+                "points": [
+                    {
+                        "x": 892.751734,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 0 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 453.177844,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 911.266689,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1 #取值范围[0, 1, 2, 3]
+                    },
+                    {
+                        "x": 892.751734,
+                        "y": 473.302795,
+                        "z": 0,
+                        "occ": 1  #取值范围[0, 1, 2, 3]
+                    }
+                ]
+            }
+        ],
+        "intersection": [
+            {
+                "cam_name": "FRONT",
+                "id": 0, #能区分就行
+                "category": "split_point", #取值范围["split_point", "conflux_point"]
+                "points": {
+                        "x": 892.751734,
+                        "y": 453.177844
+                },
+				"constitute": ["-1", "-2"] #两条lane_id(必须对应lane标注里面有的id)， 用于指示交叉的线段
+            }
+        ]
+    }
+}
+```
